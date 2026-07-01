@@ -1,21 +1,16 @@
 from dataclasses import dataclass
 from pathlib import Path
 import time
-from typing import Any, Literal
 
 from z3 import And, Distinct, Int, Or, Solver, sat
 
 from board_utils import board_size, format_board, parse_board
 
-# Redundant
-ValidityMode = Literal["solvable", "unique"]
-VerificationMode = Literal["solvable", "unique", "derived"]
-
 
 @dataclass
 class VerificationResult:
     valid: bool
-    mode: VerificationMode
+    mode: str
     solution: str | None
     solution_count: int | None
     runtime_seconds: float
@@ -27,7 +22,7 @@ class VerificationResult:
 @dataclass
 class DatasetVerificationFailure:
     record_number: int
-    record_id: Any
+    record_id: int | None
     error: str | None
 
 
@@ -38,12 +33,10 @@ class DatasetVerificationSummary:
     valid_count: int
     invalid_count: int
     runtime_seconds: float
-    failures: list[DatasetVerificationFailure]
+    failures: list
 
 
-def build_z3_sudoku_solver(
-    board: str | list[int],
-) -> tuple[Solver, list[list[Int]], list[int], int, int]:
+def build_z3_sudoku_solver(board):
     values = parse_board(board)
     n, box = board_size(values)
 
@@ -83,13 +76,11 @@ def build_z3_sudoku_solver(
     return solver, cells, values, n, box
 
 
-def _solution_from_model(cells: list[list[Int]], n: int, model) -> list[int]:
+def _solution_from_model(cells, n: int, model) -> list[int]:
     return [model[cells[r][c]].as_long() for r in range(n) for c in range(n)]
 
 
-def verify_puzzle(
-    board: str | list[int], mode: ValidityMode = "solvable"
-) -> VerificationResult:
+def verify_puzzle(board, mode: str = "solvable") -> VerificationResult:
     start = time.perf_counter()
     setup_seconds = None
     solve_seconds = None
@@ -141,13 +132,7 @@ def verify_puzzle(
             )
 
         solver.add(
-            Or(
-                [
-                    cells[r][c] != solved[r * n + c]
-                    for r in range(n)
-                    for c in range(n)
-                ]
-            )
+            Or([cells[r][c] != solved[r * n + c] for r in range(n) for c in range(n)])
         )
         has_second_solution = solver.check() == sat
         solve_seconds = time.perf_counter() - solve_start
@@ -187,13 +172,13 @@ def verify_puzzle(
 
 
 def verify_dataset_records(
-    records: list[dict[str, Any]],
+    records,
     mode: str = "solvable",
     max_failures: int = 10,
 ) -> DatasetVerificationSummary:
     start = time.perf_counter()
     valid_count = 0
-    failures: list[DatasetVerificationFailure] = []
+    failures = []
 
     for record_number, record in enumerate(records, start=1):
         result = verify_puzzle(record["puzzle"], mode=mode)
@@ -222,27 +207,20 @@ def verify_dataset_records(
 
 def verify_dataset(
     path: str | Path,
-    expected_size: int | None = None,
     mode: str = "solvable",
     max_failures: int = 10,
 ) -> DatasetVerificationSummary:
-    from .generation import read_dataset
+    from cli_helpers import read_dataset
 
-    records = read_dataset(path, expected_size=expected_size)
+    records = read_dataset(path)
     return verify_dataset_records(records, mode=mode, max_failures=max_failures)
 
 
 def verify_dataset_menu():
-    from cli_helpers import prompt_choice
-    from .generation import dataset_size_from_path, select_dataset
+    from cli_helpers import prompt_choice, select_dataset
 
     dataset_path = select_dataset()
     if dataset_path is None:
-        return
-    try:
-        size = dataset_size_from_path(dataset_path)
-    except ValueError as exc:
-        print(exc)
         return
 
     mode = prompt_choice("\nSelect verification mode:", ["solvable", "unique"])
@@ -252,7 +230,7 @@ def verify_dataset_menu():
 
     print(f"\nVerifying {dataset_path} with mode={mode}...")
     try:
-        summary = verify_dataset(dataset_path, expected_size=size, mode=mode)
+        summary = verify_dataset(dataset_path, mode=mode)
     except Exception as exc:
         print(f"Dataset verification failed: {exc}")
         return

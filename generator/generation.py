@@ -4,30 +4,16 @@ from pathlib import Path
 import random
 import re
 import time
-from typing import Any
 
 from board_utils import format_board, parse_board, validate_size
-from cli_helpers import prompt_choice, prompt_positive_int, prompt_size
+import cli_helpers
+from cli_helpers import prompt_positive_int, prompt_size
 from config import load_config
 from .verification import VerificationResult, verify_puzzle
-
 
 DATASETS_DIR = load_config()["paths"]["datasets_dir"]
 DIFFICULTY_PERCENT_RANGES = load_config()["generation"]["clue_percent_ranges"]
 DIFFICULTIES = tuple(DIFFICULTY_PERCENT_RANGES) + ("mixed",)
-REQUIRED_RECORD_FIELDS = {
-    "id",
-    "size",
-    "difficulty",
-    "clue_percent",
-    "target_clues",
-    "actual_clues",
-    "puzzle",
-    "solution",
-    "seed",
-    "verification_mode",
-    "unique",
-}
 
 
 @dataclass
@@ -39,14 +25,6 @@ class GeneratedPuzzle:
     target_clues: int
     actual_clues: int
     verification: VerificationResult
-
-
-def _difficulty_percent_ranges() -> dict[str, tuple[float, float]]:
-    return load_config()["generation"]["clue_percent_ranges"]
-
-
-def _difficulties() -> tuple[str, ...]:
-    return tuple(_difficulty_percent_ranges()) + ("mixed",)
 
 
 def generate_pattern_solution(size: int = 9, seed: int | None = None) -> str:
@@ -71,11 +49,7 @@ def generate_pattern_solution(size: int = 9, seed: int | None = None) -> str:
     digits = list(range(1, n + 1))
     rng.shuffle(digits)
 
-    values = [
-        digits[pattern(row, col)]
-        for row in rows
-        for col in cols
-    ]
+    values = [digits[pattern(row, col)] for row in rows for col in cols]
     return format_board(values)
 
 
@@ -123,7 +97,7 @@ def generate_puzzle(
 
 
 def random_clue_percent(difficulty: str, rng: random.Random) -> float:
-    ranges = _difficulty_percent_ranges()
+    ranges = DIFFICULTY_PERCENT_RANGES
     if difficulty not in ranges:
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     low, high = ranges[difficulty]
@@ -136,8 +110,8 @@ def clue_count(size: int, difficulty: str, rng: random.Random) -> tuple[int, flo
 
 
 def expand_difficulties(difficulty: str, count: int) -> list[str]:
-    ranges = _difficulty_percent_ranges()
-    if difficulty not in _difficulties():
+    ranges = DIFFICULTY_PERCENT_RANGES
+    if difficulty not in DIFFICULTIES:
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     if count <= 0:
         raise ValueError("Count must be positive")
@@ -158,21 +132,14 @@ def dataset_path(
     count: int,
 ) -> Path:
     validate_size(size)
-    if difficulty not in _difficulties():
+    if difficulty not in DIFFICULTIES:
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     if count < 0:
         raise ValueError("Count cannot be negative")
-    return Path(load_config()["paths"]["datasets_dir"]) / f"{size}x{size}_{difficulty}_{count}.jsonl"
-
-
-def list_datasets(size: int | None = None) -> list[Path]:
-    if size is not None:
-        validate_size(size)
-    directory = Path(load_config()["paths"]["datasets_dir"])
-    if not directory.exists():
-        return []
-    pattern = f"{size}x{size}_*.jsonl" if size is not None else "*.jsonl"
-    return sorted(directory.glob(pattern))
+    return (
+        Path(load_config()["paths"]["datasets_dir"])
+        / f"{size}x{size}_{difficulty}_{count}.jsonl"
+    )
 
 
 def dataset_size_from_path(path: str | Path) -> int:
@@ -183,14 +150,14 @@ def dataset_size_from_path(path: str | Path) -> int:
 
 
 def write_dataset_records(
-    records: list[dict[str, Any]],
+    records,
     size: int,
     difficulty: str,
 ) -> Path:
     validate_size(size)
     directory = Path(load_config()["paths"]["datasets_dir"])
     directory.mkdir(parents=True, exist_ok=True)
-    if difficulty not in _difficulties():
+    if difficulty not in DIFFICULTIES:
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     path = dataset_path(size, difficulty, len(records))
 
@@ -202,50 +169,20 @@ def write_dataset_records(
     return path
 
 
-def read_dataset(path: str | Path, expected_size: int | None = None) -> list[dict[str, Any]]:
-    records: list[dict[str, Any]] = []
-    with open(path, encoding="utf-8") as f:
-        for line_number, line in enumerate(f, start=1):
-            line = line.strip()
-            if not line:
-                continue
-            record = json.loads(line)
-            missing = REQUIRED_RECORD_FIELDS - set(record)
-            if missing:
-                raise ValueError(
-                    f"Record {line_number} is missing fields: {', '.join(sorted(missing))}"
-                )
-            size = int(record["size"])
-            if expected_size is not None and size != expected_size:
-                raise ValueError(
-                    f"Record {line_number} has size {size}, expected {expected_size}"
-                )
-            values = parse_board(record["puzzle"])
-            if len(values) != size * size:
-                raise ValueError(
-                    f"Record {line_number} puzzle length does not match size {size}"
-                )
-            solution_values = parse_board(record["solution"])
-            if len(solution_values) != size * size:
-                raise ValueError(
-                    f"Record {line_number} solution length does not match size {size}"
-                )
-            records.append(record)
-    return records
-
-
 def generate_dataset_records(
     size: int,
     difficulty: str,
     count: int,
     seed: int | None = None,
     verify: bool = False,
-) -> list[dict[str, Any]]:
+):
     validate_size(size)
     rng = random.Random(seed)
     records = []
 
-    for index, actual_difficulty in enumerate(expand_difficulties(difficulty, count), start=1):
+    for index, actual_difficulty in enumerate(
+        expand_difficulties(difficulty, count), start=1
+    ):
         puzzle_seed = rng.randrange(2**63)
         target_clues, clue_percent = clue_count(size, actual_difficulty, rng)
 
@@ -292,38 +229,12 @@ def generate_dataset(
     return write_dataset_records(records, size, difficulty)
 
 
-def prompt_difficulty():
-    selected = prompt_choice(
-        "\nSelect difficulty:",
-        list(_difficulties()),
-    )
-    if selected is None:
-        print("Invalid difficulty.")
-    return selected
-
-
-def select_dataset(size: int | None = None):
-    datasets = list_datasets(size)
-    if not datasets:
-        size_label = f" for {size}x{size}" if size is not None else ""
-        print(f"\nNo datasets found{size_label}. Generate a dataset first.")
-        return None
-
-    options = [path.name for path in datasets]
-    selected = prompt_choice("\nAvailable datasets:", options)
-    if selected is None:
-        print("Invalid dataset.")
-        return None
-
-    return datasets[options.index(selected)]
-
-
 def generate_dataset_menu():
     size = prompt_size()
     if size is None:
         return
 
-    difficulty = prompt_difficulty()
+    difficulty = cli_helpers.prompt_difficulty(DIFFICULTIES)
     if difficulty is None:
         return
 

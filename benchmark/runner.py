@@ -2,9 +2,9 @@ import multiprocessing
 import queue
 import time
 
-from cli_helpers import prompt_choice
+from cli_helpers import prompt_choice, read_dataset, select_dataset
 from config import load_config
-from generator import dataset_size_from_path, read_dataset, select_dataset
+from generator import dataset_size_from_path
 from .reporting import (
     print_summary_table,
     result_paths,
@@ -92,7 +92,7 @@ def benchmark_dataset(
     write_csv=False,
     solver_names=None,
 ):
-    records = read_dataset(dataset_path, expected_size=size)
+    records = read_dataset(dataset_path)
     if not records:
         print("\nDataset has no puzzles.")
         return None

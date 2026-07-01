@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
-from cli_helpers import prompt_size
+from cli_helpers import list_datasets, prompt_difficulty, prompt_size, read_dataset
 import generator.verification as verification_module
 from generator import (
     DIFFICULTY_PERCENT_RANGES,
@@ -18,9 +18,6 @@ from generator import (
     generation as generation_module,
     generate_dataset_records,
     generate_puzzle,
-    list_datasets,
-    prompt_difficulty,
-    read_dataset,
     verify_dataset_records,
     write_dataset_records,
 )
@@ -89,7 +86,7 @@ class SudokuDatasetTests(unittest.TestCase):
                     size=36,
                     difficulty="hard",
                 )
-                loaded = read_dataset(path, expected_size=36)
+                loaded = read_dataset(path)
 
         self.assertEqual(len(loaded), 1)
         self.assertEqual(path.name, "36x36_hard_1.jsonl")
@@ -97,19 +94,6 @@ class SudokuDatasetTests(unittest.TestCase):
         self.assertEqual(loaded[0]["difficulty"], "hard")
         self.assertEqual(loaded[0]["verification_mode"], "derived")
         self.assertFalse(loaded[0]["unique"])
-
-    def test_dataset_reader_rejects_wrong_size(self):
-        records = generate_dataset_records(36, "easy", 1, seed=123, verify=False)
-
-        with tempfile.TemporaryDirectory() as root:
-            with temporary_config(root, datasets_dir=root):
-                path = write_dataset_records(
-                    records,
-                    size=36,
-                    difficulty="easy",
-                )
-                with self.assertRaises(ValueError):
-                    read_dataset(path, expected_size=9)
 
     def test_dataset_path_uses_stable_size_and_difficulty(self):
         self.assertEqual(
@@ -125,7 +109,7 @@ class SudokuDatasetTests(unittest.TestCase):
             with temporary_config(root, datasets_dir=root):
                 first = write_dataset_records(first_records, 4, "easy")
                 second = write_dataset_records(second_records, 4, "easy")
-                loaded = read_dataset(second, expected_size=4)
+                loaded = read_dataset(second)
 
         self.assertNotEqual(first, second)
         self.assertEqual(first.name, "4x4_easy_1.jsonl")
@@ -253,7 +237,7 @@ class DatasetMenuSmokeTests(unittest.TestCase):
         output = io.StringIO()
         with patch("generator.generation.prompt_size", return_value=4):
             with patch(
-                "generator.generation.prompt_difficulty",
+                "cli_helpers.prompt_difficulty",
                 return_value="medium",
             ):
                 with patch("generator.generation.prompt_positive_int", return_value=2):
@@ -274,14 +258,14 @@ class DatasetMenuSmokeTests(unittest.TestCase):
         output = io.StringIO()
         with patch("builtins.input", return_value="4"):
             with contextlib.redirect_stdout(output):
-                selected = prompt_difficulty()
+                selected = prompt_difficulty(generation_module.DIFFICULTIES)
 
         self.assertEqual(selected, "mixed")
 
     def test_verify_dataset_menu_selects_from_all_available_datasets(self):
         selected_path = Path("data/datasets/4x4_easy_1.jsonl")
 
-        with patch("generator.generation.select_dataset", return_value=selected_path) as select:
+        with patch("cli_helpers.select_dataset", return_value=selected_path) as select:
             with patch("cli_helpers.prompt_choice", return_value="solvable"):
                 with patch(
                     "generator.verification.verify_dataset",
@@ -300,7 +284,6 @@ class DatasetMenuSmokeTests(unittest.TestCase):
         select.assert_called_once_with()
         verify.assert_called_once_with(
             selected_path,
-            expected_size=4,
             mode="solvable",
         )
 

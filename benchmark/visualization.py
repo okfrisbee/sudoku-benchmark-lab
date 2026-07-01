@@ -23,7 +23,9 @@ def visualization_menu(results_table):
     show_naive = True
     if "naive" in times_by_solver:
         show_naive = input("Show naive solver on graph? (y/n): ").strip().lower() == "y"
-    avgs = results_table.groupby("solver", sort=False)["runtime_seconds"].mean().to_dict()
+    avgs = (
+        results_table.groupby("solver", sort=False)["runtime_seconds"].mean().to_dict()
+    )
     visualize_benchmark(times_by_solver, tested, avgs, show_naive=show_naive)
 
 

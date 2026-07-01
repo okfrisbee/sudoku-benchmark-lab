@@ -4,7 +4,6 @@ import pandas as pd
 
 from config import load_config
 
-
 CSV_FIELDS = [
     "size",
     "difficulty",
