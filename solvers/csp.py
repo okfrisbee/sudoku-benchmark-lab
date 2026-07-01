@@ -137,28 +137,21 @@ class CSPSolver:
         houses = self.rows + self.cols + self.boxes
 
         for house in houses:
-            seen = [None for _ in range(self.size)]
+            candidate_locations = [[] for _ in range(self.size + 1)]
 
             for cell in house:
                 if self.board[cell] != 0:
                     continue
 
                 for candidate in self.candidates[cell]:
-                    match seen[candidate - 1]:
-                        case -1:
-                            continue
-                        case None:
-                            seen[candidate - 1] = cell
-                        case _:
-                            seen[candidate - 1] = -1
+                    candidate_locations[candidate].append(cell)
 
-            for i, cell in enumerate(seen):
-                match cell:
-                    case -1 | None:
-                        continue
-                    case _:
-                        self.assign(cell, i + 1)
-                        eliminated += 1
+            for candidate, cells in enumerate(candidate_locations):
+                if candidate == 0 or len(cells) != 1:
+                    continue
+
+                self.assign(cells[0], candidate)
+                eliminated += 1
 
         return eliminated
 
@@ -207,7 +200,7 @@ class CSPSolver:
             return True
 
         index = self.find_mrv()
-        if index == None:
+        if index is None:
             return True
 
         for candidate in self.candidates[index]:
@@ -236,35 +229,37 @@ class CSPSolver:
         return self.backtrack()
 
 
-def solve_csp(board: str) -> SolverResult:
+def solve_csp(board: str | list[int]) -> SolverResult:
     start = time.perf_counter()
+    solver = None
+    solution = None
+    status = "error"
+    error = None
 
     try:
         solver = CSPSolver(board)
         if not solver.validate_board_state():
-            return SolverResult(
-                solution=None,
-                status="failed",
-                runtime_seconds=time.perf_counter() - start,
-                backtracks=solver.backtracks,
-                assignments=solver.assignments,
-                recursive_calls=solver.recursive_calls,
-                error="Invalid board state.",
-            )
-
-        solved = solver.solve()
-        return SolverResult(
-            solution=solver.get_board() if solved else None,
-            status="solved" if solved else "failed",
-            runtime_seconds=time.perf_counter() - start,
-            backtracks=solver.backtracks,
-            assignments=solver.assignments,
-            recursive_calls=solver.recursive_calls,
-        )
+            status = "failed"
+            error = "Invalid board state."
+        else:
+            solved = solver.solve()
+            solution = solver.get_board() if solved else None
+            status = "solved" if solved else "failed"
     except Exception as exc:
-        return SolverResult(
-            solution=None,
-            status="error",
-            runtime_seconds=time.perf_counter() - start,
-            error=str(exc),
-        )
+        error = str(exc)
+
+    solver_metrics = {}
+    if solver is not None and status != "error":
+        solver_metrics = {
+            "backtracks": solver.backtracks,
+            "assignments": solver.assignments,
+            "recursive_calls": solver.recursive_calls,
+        }
+
+    return SolverResult(
+        solution=solution,
+        status=status,
+        runtime_seconds=time.perf_counter() - start,
+        error=error,
+        **solver_metrics,
+    )
