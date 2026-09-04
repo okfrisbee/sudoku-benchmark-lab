@@ -95,11 +95,17 @@ class CSPSolver:
     # Assignment Methods
     def assign(self, index, value):
         """Assigns a value to a cell and updates the peers' candidate sets."""
+        if self.board[index] != 0:
+            return set(self.candidates[index]), [], self.board[index] == value
+
+        previous_candidates = set(self.candidates[index])
+        if value not in previous_candidates:
+            return previous_candidates, [], False
+
         self.assignments += 1
-        previous_candidates = self.candidates[index]
         self.board[index] = value
         self.candidates[index] = {value}
-        self.unassigned.remove(index)
+        self.unassigned.discard(index)
 
         valid = True
         removed_peers = []
@@ -122,16 +128,30 @@ class CSPSolver:
             self.candidates[peer].add(value)
 
     # Sudoku Strategies
-    def eliminate_naked_singles(self) -> int:
+    def has_empty_candidate_cell(self) -> bool:
+        return any(
+            self.board[cell] == 0 and len(self.candidates[cell]) == 0
+            for cell in self.unassigned
+        )
+
+    def eliminate_naked_singles(self) -> tuple[int, bool]:
         "Automatically fills any cells that has exactly only one possible candidate."
         eliminated = 0
         for cell in list(self.unassigned):
+            if self.board[cell] != 0:
+                continue
+            if len(self.candidates[cell]) == 0:
+                return eliminated, False
             if len(self.candidates[cell]) == 1:
-                self.assign(cell, list(self.candidates[cell])[0])
+                _previous, _removed, valid = self.assign(
+                    cell, next(iter(self.candidates[cell]))
+                )
+                if not valid:
+                    return eliminated, False
                 eliminated += 1
-        return eliminated
+        return eliminated, True
 
-    def eliminate_hidden_singles(self) -> int:
+    def eliminate_hidden_singles(self) -> tuple[int, bool]:
         """Fills cells with values that only appear in one place within a row, column, or box."""
         eliminated = 0
         houses = self.rows + self.cols + self.boxes
@@ -150,40 +170,48 @@ class CSPSolver:
                 if candidate == 0 or len(cells) != 1:
                     continue
 
-                self.assign(cells[0], candidate)
+                cell = cells[0]
+                if self.board[cell] != 0:
+                    continue
+
+                _previous, _removed, valid = self.assign(cell, candidate)
+                if not valid:
+                    return eliminated, False
                 eliminated += 1
+                return eliminated, True
 
-        return eliminated
+        return eliminated, True
 
-    def find_naked_pairs(self) -> int:
+    def find_naked_pairs(self) -> tuple[int, bool]:
         """Finds naked pairs and removes them from the candidates of other cells in the same house."""
         eliminated = 0
         houses = self.rows + self.cols + self.boxes
 
         for house in houses:
-            two_celled = []
+            pairs = {}
             for cell in house:
                 if self.board[cell] != 0:
                     continue
 
                 if len(self.candidates[cell]) == 2:
-                    two_celled.append(cell)
+                    pair = frozenset(self.candidates[cell])
+                    pairs.setdefault(pair, []).append(cell)
 
-            if len(two_celled) != 2:
-                continue
+            for pair, pair_cells in pairs.items():
+                if len(pair_cells) != 2:
+                    continue
 
-            if self.candidates[two_celled[0]] == self.candidates[two_celled[1]]:
                 for cell in house:
-                    if cell in two_celled:
+                    if cell in pair_cells or self.board[cell] != 0:
                         continue
 
-                    if self.candidates[cell].intersection(
-                        self.candidates[two_celled[0]]
-                    ):
-                        self.candidates[cell] -= self.candidates[two_celled[0]]
-                        eliminated += 1
+                    before = len(self.candidates[cell])
+                    self.candidates[cell] -= pair
+                    eliminated += before - len(self.candidates[cell])
+                    if len(self.candidates[cell]) == 0:
+                        return eliminated, False
 
-        return eliminated
+        return eliminated, True
 
     # Heuristics and Search
     def find_mrv(self):
@@ -198,12 +226,14 @@ class CSPSolver:
 
         if self.is_complete():
             return True
+        if self.has_empty_candidate_cell():
+            return False
 
         index = self.find_mrv()
         if index is None:
             return True
 
-        for candidate in self.candidates[index]:
+        for candidate in list(self.candidates[index]):
             previous, removed, valid = self.assign(index, candidate)
             if valid and self.backtrack():
                 return True
@@ -215,13 +245,22 @@ class CSPSolver:
     def solve(self) -> bool:
         """Tries Sudoku strategies before searching for a complete solution."""
         while not self.is_complete():
-            eliminated = self.eliminate_naked_singles()
+            if self.has_empty_candidate_cell():
+                return False
+
+            eliminated, valid = self.eliminate_naked_singles()
+            if not valid:
+                return False
 
             if eliminated == 0:
-                eliminated += self.eliminate_hidden_singles()
+                eliminated, valid = self.eliminate_hidden_singles()
+                if not valid:
+                    return False
 
             if eliminated == 0:
-                eliminated += self.find_naked_pairs()
+                eliminated, valid = self.find_naked_pairs()
+                if not valid:
+                    return False
 
             if eliminated == 0:
                 break
@@ -245,6 +284,9 @@ def solve_csp(board: str | list[int]) -> SolverResult:
             solved = solver.solve()
             solution = solver.get_board() if solved else None
             status = "solved" if solved else "failed"
+    except ValueError as exc:
+        status = "failed"
+        error = str(exc)
     except Exception as exc:
         error = str(exc)
 

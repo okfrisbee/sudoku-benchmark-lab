@@ -1,6 +1,6 @@
 import time
 
-from z3 import sat
+from z3 import sat, unsat
 
 from board_utils import format_board
 from generator import build_z3_sudoku_solver
@@ -21,7 +21,7 @@ def solve_smt(board: str | list[int]) -> SolverResult:
         check_result = solver.check()
         solve_seconds = time.perf_counter() - solve_start
 
-        if check_result != sat:
+        if check_result == unsat:
             return SolverResult(
                 solution=None,
                 status="failed",
@@ -29,6 +29,15 @@ def solve_smt(board: str | list[int]) -> SolverResult:
                 setup_seconds=setup_seconds,
                 solve_seconds=solve_seconds,
                 error="Sudoku is UNSAT.",
+            )
+        if check_result != sat:
+            return SolverResult(
+                solution=None,
+                status="error",
+                runtime_seconds=time.perf_counter() - start,
+                setup_seconds=setup_seconds,
+                solve_seconds=solve_seconds,
+                error=f"Z3 returned {check_result}: {solver.reason_unknown()}",
             )
 
         model = solver.model()

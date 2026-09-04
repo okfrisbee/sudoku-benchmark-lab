@@ -15,7 +15,7 @@ from .reporting import (
 
 from solvers.csp import solve_csp
 from solvers.dlx import solve_dlx
-from solvers.metrics import SolverResult
+from solvers.metrics import SolverResult, validate_solution
 from solvers.naive import solve_naive
 from solvers.sat import solve_sudoku as solve_sat
 from solvers.smt import solve_smt
@@ -86,6 +86,27 @@ def _csv_row(size, puzzle_index, solver_name, result, record):
     }
 
 
+def validate_solver_result(puzzle, result: SolverResult) -> SolverResult:
+    if not result.solved:
+        return result
+
+    valid, error = validate_solution(puzzle, result.solution)
+    if valid:
+        return result
+
+    return SolverResult(
+        solution=result.solution,
+        status="error",
+        runtime_seconds=result.runtime_seconds,
+        setup_seconds=result.setup_seconds,
+        solve_seconds=result.solve_seconds,
+        backtracks=result.backtracks,
+        assignments=result.assignments,
+        recursive_calls=result.recursive_calls,
+        error=f"Invalid solver solution: {error}",
+    )
+
+
 def benchmark_dataset(
     dataset_path,
     size,
@@ -114,6 +135,7 @@ def benchmark_dataset(
                 fn,
                 puzzle,
             )
+            result = validate_solver_result(puzzle, result)
             csv_rows.append(_csv_row(size, i, name, result, record))
 
             if result.solved:

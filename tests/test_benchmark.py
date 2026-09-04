@@ -144,6 +144,38 @@ class BenchmarkTests(unittest.TestCase):
         self.assertIn("csp=0.0010s", output.getvalue())
         self.assertNotIn("sat=", output.getvalue())
 
+    def test_benchmark_dataset_rejects_invalid_solved_result(self):
+        record = generate_dataset_records(4, "easy", 1, seed=123, verify=False)[0]
+
+        with tempfile.TemporaryDirectory() as root:
+            with temporary_config(root, datasets_dir=root):
+                dataset_path_for_test = write_dataset_records(
+                    [record],
+                    size=4,
+                    difficulty="easy",
+                )
+
+                def fake_solver(_puzzle):
+                    return SolverResult(
+                        solution="1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1",
+                        status="solved",
+                        runtime_seconds=0.001,
+                    )
+
+                output = io.StringIO()
+                with patch("benchmark.runner.SOLVERS", {"fake": fake_solver}):
+                    with contextlib.redirect_stdout(output):
+                        result = benchmark_module.benchmark_dataset(
+                            dataset_path_for_test,
+                            4,
+                            write_csv=False,
+                        )
+
+        self.assertIn("fake=ERROR", output.getvalue())
+        self.assertEqual(result["status"].tolist(), ["error"])
+        self.assertEqual(result["solution_found"].tolist(), [False])
+        self.assertIn("Invalid solver solution", result["error"].tolist()[0])
+
     def test_benchmark_dataset_times_out_slow_solver(self):
         record = generate_dataset_records(4, "easy", 1, seed=123, verify=False)[0]
 

@@ -57,45 +57,78 @@ def solve_naive(board: str | list[int]) -> SolverResult:
             if not valid_group(values):
                 return failed("Invalid board state.")
 
+    row_values = [set() for _ in range(n)]
+    col_values = [set() for _ in range(n)]
+    box_values = [set() for _ in range(n)]
+    empty_cells = []
+
+    for index, value in enumerate(cells):
+        row, col = divmod(index, n)
+        box_index = (row // box) * box + (col // box)
+        if value == 0:
+            empty_cells.append(index)
+            continue
+
+        row_values[row].add(value)
+        col_values[col].add(value)
+        box_values[box_index].add(value)
+
     def is_valid(index: int, value: int) -> bool:
         row, col = divmod(index, n)
+        box_index = (row // box) * box + (col // box)
+        return (
+            value not in row_values[row]
+            and value not in col_values[col]
+            and value not in box_values[box_index]
+        )
 
-        for c in range(n):
-            if cells[row * n + c] == value:
-                return False
+    def place(index: int, value: int) -> None:
+        row, col = divmod(index, n)
+        box_index = (row // box) * box + (col // box)
+        cells[index] = value
+        row_values[row].add(value)
+        col_values[col].add(value)
+        box_values[box_index].add(value)
 
-        for r in range(n):
-            if cells[r * n + col] == value:
-                return False
+    def remove(index: int, value: int) -> None:
+        row, col = divmod(index, n)
+        box_index = (row // box) * box + (col // box)
+        cells[index] = 0
+        row_values[row].remove(value)
+        col_values[col].remove(value)
+        box_values[box_index].remove(value)
 
-        br, bc = (row // box) * box, (col // box) * box
-        for r in range(br, br + box):
-            for c in range(bc, bc + box):
-                if cells[r * n + c] == value:
-                    return False
-
-        return True
-
-    def backtrack(index: int = 0) -> bool:
+    def backtrack() -> bool:
         nonlocal recursive_calls, assignments, backtracks
-        recursive_calls += 1
-
-        if index == len(cells):
+        if not empty_cells:
+            recursive_calls += 1
             return True
 
-        if cells[index] != 0:
-            return backtrack(index + 1)
+        depth = 0
 
-        for value in range(1, n + 1):
-            if is_valid(index, value):
-                cells[index] = value
+        while 0 <= depth < len(empty_cells):
+            recursive_calls += 1
+            index = empty_cells[depth]
+            current = cells[index]
+            start_value = 1
+
+            if current != 0:
+                remove(index, current)
+                start_value = current + 1
+
+            for value in range(start_value, n + 1):
+                if not is_valid(index, value):
+                    continue
+
+                place(index, value)
                 assignments += 1
-                if backtrack(index + 1):
-                    return True
-                cells[index] = 0
+                depth += 1
+                break
+            else:
                 backtracks += 1
+                depth -= 1
 
-        return False
+        return depth == len(empty_cells)
 
     solved = backtrack()
     return SolverResult(
