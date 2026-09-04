@@ -5,6 +5,7 @@ from solvers.csp import CSPSolver, solve_csp
 from solvers.dlx import solve_dlx
 from solvers.metrics import validate_solution
 from solvers.naive import solve_naive
+from solvers.naive_recursive import solve_naive_recursive
 
 
 SOLVED_4X4 = "1 2 3 4 3 4 1 2 2 1 4 3 4 3 2 1"
@@ -23,6 +24,7 @@ def optional_solver(module_name, function_name):
 
 SOLVERS = [
     ("naive", solve_naive),
+    ("naive_recursive", solve_naive_recursive),
     ("csp", solve_csp),
     ("dlx", solve_dlx),
     ("sat", optional_solver("solvers.sat", "solve_sudoku")),

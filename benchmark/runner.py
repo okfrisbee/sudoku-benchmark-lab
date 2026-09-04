@@ -17,12 +17,14 @@ from solvers.csp import solve_csp
 from solvers.dlx import solve_dlx
 from solvers.metrics import SolverResult, validate_solution
 from solvers.naive import solve_naive
+from solvers.naive_recursive import solve_naive_recursive
 from solvers.sat import solve_sudoku as solve_sat
 from solvers.smt import solve_smt
 
 BENCHMARK_SOLVER_TIMEOUT_SECONDS = load_config()["benchmark"]["solver_timeout_seconds"]
 SOLVERS = {
     "naive": solve_naive,
+    "naive_recursive": solve_naive_recursive,
     "csp": solve_csp,
     "sat": solve_sat,
     "smt": solve_smt,

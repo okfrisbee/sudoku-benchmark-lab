@@ -318,7 +318,7 @@ class BenchmarkTests(unittest.TestCase):
         select.assert_called_once_with()
         prompt.assert_called_once_with(
             "\nSelect benchmark solver mode:",
-            ["all", "naive", "csp", "sat", "smt", "dlx"],
+            ["all", "naive", "naive_recursive", "csp", "sat", "smt", "dlx"],
         )
         run_benchmark.assert_called_once_with(
             selected_path,

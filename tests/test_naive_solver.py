@@ -1,6 +1,7 @@
 import unittest
 
 from solvers.naive import solve_naive
+from solvers.naive_recursive import solve_naive_recursive
 
 
 SOLVED_4X4 = "1 2 3 4 3 4 1 2 2 1 4 3 4 3 2 1"
@@ -46,6 +47,43 @@ class NaiveSolverTests(unittest.TestCase):
 
         self.assertEqual(result.status, "failed")
         self.assertEqual(result.error, "Invalid board state.")
+
+
+class RecursiveNaiveSolverTests(unittest.TestCase):
+    def test_solves_4x4_puzzle_recursively(self):
+        result = solve_naive_recursive(
+            "1 0 3 0 0 4 0 2 2 0 4 0 0 3 0 1"
+        )
+
+        self.assertTrue(result.solved)
+        self.assertEqual(result.solution, SOLVED_4X4)
+        self.assertGreater(result.recursive_calls, 1)
+
+    def test_solves_tokenized_16x16_puzzle(self):
+        solved = pattern_solution(16)
+        puzzle = solved.copy()
+        puzzle[0] = 0
+
+        result = solve_naive_recursive(puzzle)
+
+        self.assertTrue(result.solved)
+        self.assertEqual(result.solution, " ".join(map(str, solved)))
+
+    def test_rejects_duplicate_givens(self):
+        result = solve_naive_recursive(
+            "1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+        )
+
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(result.error, "Invalid board state.")
+
+    def test_reports_unsatisfiable_board(self):
+        result = solve_naive_recursive(
+            [1, 2, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        )
+
+        self.assertEqual(result.status, "failed")
+        self.assertIsNone(result.solution)
 
 
 if __name__ == "__main__":
