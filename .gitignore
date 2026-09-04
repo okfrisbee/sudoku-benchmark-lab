@@ -6,6 +6,3 @@ __pycache__/
 
 .codex/
 .agents/
-
-benchmark_results_*.csv
-data/

@@ -1,0 +1,101 @@
+[suite]
+name = "sudoku-solvers-2026-09-04"
+output_dir = "benchmark/artifacts/2026-09-04/final"
+warmup = true
+solvers = ["naive", "naive_recursive", "csp", "sat", "smt", "dlx"]
+
+[[cases]]
+name = "9x9_easy"
+size = 9
+difficulty = "easy"
+count = 50
+seed = 2026090401
+timeout_seconds = 1.0
+
+[[cases]]
+name = "9x9_medium"
+size = 9
+difficulty = "medium"
+count = 50
+seed = 2026090402
+timeout_seconds = 1.0
+
+[[cases]]
+name = "9x9_hard"
+size = 9
+difficulty = "hard"
+count = 50
+seed = 2026090403
+timeout_seconds = 1.0
+
+[[cases]]
+name = "16x16_easy"
+size = 16
+difficulty = "easy"
+count = 24
+seed = 2026090411
+timeout_seconds = 1.0
+
+[[cases]]
+name = "16x16_medium"
+size = 16
+difficulty = "medium"
+count = 20
+seed = 2026090412
+timeout_seconds = 2.0
+
+[[cases]]
+name = "16x16_hard"
+size = 16
+difficulty = "hard"
+count = 16
+seed = 2026090413
+timeout_seconds = 2.0
+
+[[cases]]
+name = "25x25_easy"
+size = 25
+difficulty = "easy"
+count = 10
+seed = 2026090421
+timeout_seconds = 1.5
+
+[[cases]]
+name = "25x25_medium"
+size = 25
+difficulty = "medium"
+count = 8
+seed = 2026090422
+timeout_seconds = 2.5
+
+[[cases]]
+name = "25x25_hard"
+size = 25
+difficulty = "hard"
+count = 6
+seed = 2026090423
+timeout_seconds = 2.5
+
+[[cases]]
+name = "36x36_easy"
+size = 36
+difficulty = "easy"
+count = 4
+seed = 2026090431
+timeout_seconds = 3.0
+
+[[cases]]
+name = "36x36_medium"
+size = 36
+difficulty = "medium"
+count = 3
+seed = 2026090432
+timeout_seconds = 3.0
+
+[[cases]]
+name = "36x36_hard"
+size = 36
+difficulty = "hard"
+count = 3
+seed = 2026090433
+timeout_seconds = 3.0

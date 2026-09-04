@@ -39,8 +39,13 @@ def _run_solver_process(solver_fn, puzzle, result_queue):
 def solve_with_timeout(
     solver_fn,
     puzzle,
+    timeout_seconds=None,
 ) -> SolverResult:
-    timeout_seconds = load_config()["benchmark"]["solver_timeout_seconds"]
+    if timeout_seconds is None:
+        timeout_seconds = load_config()["benchmark"]["solver_timeout_seconds"]
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
+
     start = time.perf_counter()
     context_name = "fork" if "fork" in multiprocessing.get_all_start_methods() else None
     context = multiprocessing.get_context(context_name)
@@ -56,16 +61,21 @@ def solve_with_timeout(
     if process.is_alive():
         process.terminate()
         process.join()
-        elapsed = time.perf_counter() - start
         return SolverResult(
             solution=None,
             status="timeout",
-            runtime_seconds=elapsed,
+            # A timeout is a censored observation: the solver consumed its
+            # whole allowance, while the extra parent-side termination time is
+            # harness overhead rather than solver runtime.
+            runtime_seconds=float(timeout_seconds),
             error=f"Timed out after {timeout_seconds} seconds.",
         )
 
     try:
-        return result_queue.get_nowait()
+        # A multiprocessing.Queue uses a feeder thread.  The process may have
+        # exited just before that thread makes the result visible to the
+        # parent, so a non-blocking read can incorrectly report a crash.
+        return result_queue.get(timeout=0.1)
     except queue.Empty:
         return SolverResult(
             solution=None,
@@ -75,7 +85,7 @@ def solve_with_timeout(
         )
 
 
-def _csv_row(size, puzzle_index, solver_name, result, record):
+def _csv_row(size, puzzle_index, solver_name, result, record, timeout_seconds):
     return {
         "puzzle_index": puzzle_index,
         "solver_name": solver_name,
@@ -83,7 +93,11 @@ def _csv_row(size, puzzle_index, solver_name, result, record):
         "metadata": {
             "size": size,
             "difficulty": record.get("difficulty", ""),
+            "clue_percent": record.get("clue_percent", ""),
             "clues": record.get("actual_clues", ""),
+            "puzzle_id": record.get("id", puzzle_index),
+            "puzzle_seed": record.get("seed", ""),
+            "timeout_seconds": timeout_seconds,
         },
     }
 
@@ -114,7 +128,13 @@ def benchmark_dataset(
     size,
     write_csv=False,
     solver_names=None,
+    timeout_seconds=None,
 ):
+    if timeout_seconds is None:
+        timeout_seconds = load_config()["benchmark"]["solver_timeout_seconds"]
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
+
     records = read_dataset(dataset_path)
     if not records:
         print("\nDataset has no puzzles.")
@@ -136,9 +156,12 @@ def benchmark_dataset(
             result = solve_with_timeout(
                 fn,
                 puzzle,
+                timeout_seconds=timeout_seconds,
             )
             result = validate_solver_result(puzzle, result)
-            csv_rows.append(_csv_row(size, i, name, result, record))
+            csv_rows.append(
+                _csv_row(size, i, name, result, record, timeout_seconds)
+            )
 
             if result.solved:
                 row_parts.append(f"{name}={result.runtime_seconds:.4f}s")

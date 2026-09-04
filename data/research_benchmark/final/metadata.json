@@ -1,0 +1,194 @@
+{
+  "artifact_sha256": {
+    "datasets/16x16_easy.jsonl": "08f8488228c2f797d03ed0c96c525bd2175ba4513dd93788d794d6cc77d1e25f",
+    "datasets/16x16_hard.jsonl": "0f0108619580af1a01b466f465ecb80311ec2845e2e9d8e7f2eb5f9ea308d882",
+    "datasets/16x16_medium.jsonl": "9e3d771466aefb68b6c172573f4e59e068fed6b70880a7754e66a132e321f2c5",
+    "datasets/25x25_easy.jsonl": "d508064fdb8886a9fc4217cfbb08ae60f415949091ed20564b6215e115504b67",
+    "datasets/25x25_hard.jsonl": "55b1515230fc53142282070dcdc82e489e953f4658a56e5c809128a91e148fb4",
+    "datasets/25x25_medium.jsonl": "ebd97894e961c32c270a6596877b9a6b132de443c2114cb58944307228eda0d4",
+    "datasets/36x36_easy.jsonl": "33d6c0c053169264510f944643e4eafcea40a74dfdfe8c96a9963821f1b625b5",
+    "datasets/36x36_hard.jsonl": "5c3b2f1cdfc20864ec77d31956f49acdf7eae3c049dd0d7ef09edc074d8af37a",
+    "datasets/36x36_medium.jsonl": "47624528f192b1c37b1ef92f306ed36981f9ef7807ff944a0af43f5c2637ba48",
+    "datasets/9x9_easy.jsonl": "329913c33e63413603c408dc28b0f926b00d38aaad259f57f06875a2d60a4ca6",
+    "datasets/9x9_hard.jsonl": "b2f393e49a0611fd4fb129aae6d6e341fddb9fa5e829c2ea6c3298cbc3f3e5f5",
+    "datasets/9x9_medium.jsonl": "d5c050fbc0f3c957df29f18133be28cb6619b472b6464573ebd2cfacb8db0b4d",
+    "raw_results.csv": "0a1ecbf596e251c6930acf661e765c04d292749ad003ee27c235ac79566a9f7d",
+    "readme_tables.md": "df13206b931862d386dfff8c0e69ed243b9a9aaa32565bf84d818ef44e190798",
+    "summary_by_case.csv": "a5eb1c525a16f983e73f1b6b04cedabeaa3ec68fc9512625c103c7af471346b2",
+    "summary_by_size.csv": "dca922c26e1b2c5d98db64557db42d6a4cb3d62098521f9efa06ac3d8200c5aa"
+  },
+  "benchmark_date": "2026-09-04",
+  "cases": [
+    {
+      "count": 50,
+      "difficulty": "easy",
+      "name": "9x9_easy",
+      "seed": 2026090401,
+      "size": 9,
+      "timeout_seconds": 1.0
+    },
+    {
+      "count": 50,
+      "difficulty": "medium",
+      "name": "9x9_medium",
+      "seed": 2026090402,
+      "size": 9,
+      "timeout_seconds": 1.0
+    },
+    {
+      "count": 50,
+      "difficulty": "hard",
+      "name": "9x9_hard",
+      "seed": 2026090403,
+      "size": 9,
+      "timeout_seconds": 1.0
+    },
+    {
+      "count": 24,
+      "difficulty": "easy",
+      "name": "16x16_easy",
+      "seed": 2026090411,
+      "size": 16,
+      "timeout_seconds": 1.0
+    },
+    {
+      "count": 20,
+      "difficulty": "medium",
+      "name": "16x16_medium",
+      "seed": 2026090412,
+      "size": 16,
+      "timeout_seconds": 2.0
+    },
+    {
+      "count": 16,
+      "difficulty": "hard",
+      "name": "16x16_hard",
+      "seed": 2026090413,
+      "size": 16,
+      "timeout_seconds": 2.0
+    },
+    {
+      "count": 10,
+      "difficulty": "easy",
+      "name": "25x25_easy",
+      "seed": 2026090421,
+      "size": 25,
+      "timeout_seconds": 1.5
+    },
+    {
+      "count": 8,
+      "difficulty": "medium",
+      "name": "25x25_medium",
+      "seed": 2026090422,
+      "size": 25,
+      "timeout_seconds": 2.5
+    },
+    {
+      "count": 6,
+      "difficulty": "hard",
+      "name": "25x25_hard",
+      "seed": 2026090423,
+      "size": 25,
+      "timeout_seconds": 2.5
+    },
+    {
+      "count": 4,
+      "difficulty": "easy",
+      "name": "36x36_easy",
+      "seed": 2026090431,
+      "size": 36,
+      "timeout_seconds": 3.0
+    },
+    {
+      "count": 3,
+      "difficulty": "medium",
+      "name": "36x36_medium",
+      "seed": 2026090432,
+      "size": 36,
+      "timeout_seconds": 3.0
+    },
+    {
+      "count": 3,
+      "difficulty": "hard",
+      "name": "36x36_hard",
+      "seed": 2026090433,
+      "size": 36,
+      "timeout_seconds": 3.0
+    }
+  ],
+  "clue_percent_ranges": {
+    "easy": [
+      0.75,
+      0.85
+    ],
+    "hard": [
+      0.25,
+      0.35
+    ],
+    "medium": [
+      0.5,
+      0.6
+    ]
+  },
+  "correctness_check": "Every solved result was checked for preserved givens and valid rows, columns, and boxes.",
+  "cpu": "AMD Ryzen 7 3800X 8-Core Processor",
+  "dependencies": {
+    "contourpy": "1.3.3",
+    "cycler": "0.12.1",
+    "fonttools": "4.61.1",
+    "iniconfig": "2.3.0",
+    "kiwisolver": "1.4.9",
+    "matplotlib": "3.10.8",
+    "numpy": "2.4.2",
+    "packaging": "26.0",
+    "pandas": "2.3.3",
+    "pillow": "12.1.0",
+    "pluggy": "1.6.0",
+    "pygments": "2.20.0",
+    "pyparsing": "3.3.2",
+    "pytest": "9.1.1",
+    "python-dateutil": "2.9.0.post0",
+    "python-sat": "1.8.dev30",
+    "six": "1.17.0",
+    "z3-solver": "4.16.0.0"
+  },
+  "finished_at": "2026-09-04T00:52:02.758860-07:00",
+  "logical_cpu_count": 16,
+  "multiprocessing_start_method": "fork",
+  "operating_system": "Ubuntu 24.04.4 LTS",
+  "platform": "Linux-6.6.87.1-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "project_config_sha256": "4326c6edded0a204d8d64375bdf836719e563a617c99a89b2e9e754f20788e57",
+  "python_implementation": "CPython",
+  "python_version": "3.12.3",
+  "runtime_scope": "End-to-end solver function runtime, including parsing, model/data-structure setup, search, and solution construction; child-process launch and result validation are excluded.",
+  "solver_order": [
+    "naive",
+    "naive_recursive",
+    "csp",
+    "sat",
+    "smt",
+    "dlx"
+  ],
+  "source_file_sha256": {
+    "benchmark/reporting.py": "1322711af83bf1353cf6066d092b7084996f9fc849c9e10e7dbe92b2a22b5e50",
+    "benchmark/runner.py": "b6fb4488c00ffb2aa78de07980ff656bc35ea23ec9e551b2744ce458864edae6",
+    "benchmark/suite.py": "12fc6ae3af561e6dde9d508f92a50375410c5279209031a036fa5a851e045bf8",
+    "board_utils.py": "66a69bed956ee19e60274cc6c00aaceba130322e9a522f3e8f6e83b1bbf294a1",
+    "generator/generation.py": "f926001905734c6797a326037a2fc602a1de00574352a443c4e8ad2f74b3df71",
+    "solvers/csp.py": "565a7473a6b99089e8c26889f98e11c004c52eddf150f1293e7705874d45aa09",
+    "solvers/dlx.py": "b01f6a85769b47dacc4b76f4b1ebcf5ccb4ae48d7374dbc90c40e8fcca76110a",
+    "solvers/metrics.py": "47cc206a1733608c112ba585de0a8a227b5628ef4949b2dee9f4caa487025cda",
+    "solvers/naive.py": "46b64486a83e5901d1c848c99f3c8e9f3f16d7af7ffe3350b821b2527e7a7c4a",
+    "solvers/naive_recursive.py": "e7b52e081a853cacfccf82b9f323486c9903d526eabae67b8ec81782ed47fd57",
+    "solvers/sat.py": "4efbd444797b31ff18f61cd4538682314a9725d87c5e9f58c53a2d7e84c17bd7",
+    "solvers/smt.py": "27bffd4ba0537102fcb38d97b5e98decde3a5749e24376c564bef0e7b904eb02"
+  },
+  "source_revision": "355de9fbdc6e1eb41df009310e7919051cddaf3b",
+  "started_at": "2026-09-04T00:44:48.273899-07:00",
+  "suite": "sudoku-solvers-2026-09-04",
+  "suite_config_sha256": "7b3cdd4cb30cfbad10753891f64c11882161742b9ad935e33f4f4a4d6e9110cb",
+  "timeout_scope": "Wall-clock cutoff enforced by a dedicated child process. Timeout rows are charged exactly the configured cutoff; parent termination overhead is excluded.",
+  "timer": "time.perf_counter",
+  "wall_seconds": 463.4876588700008,
+  "warmup": "One unrecorded solve per solver on the first case"
+}

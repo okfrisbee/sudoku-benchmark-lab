@@ -202,6 +202,65 @@ class BenchmarkTests(unittest.TestCase):
         self.assertIn("slow=TIMEOUT", output.getvalue())
         self.assertIn("0/1", output.getvalue())
 
+    def test_benchmark_dataset_accepts_per_run_timeout(self):
+        record = generate_dataset_records(4, "easy", 1, seed=123, verify=False)[0]
+
+        with patch("benchmark.runner.read_dataset", return_value=[record]):
+            with patch("benchmark.runner.SOLVERS", {"slow": slow_solver}):
+                result = benchmark_module.benchmark_dataset(
+                    "4x4_easy_1.jsonl",
+                    4,
+                    solver_names=["slow"],
+                    timeout_seconds=0.02,
+                )
+
+        self.assertEqual(result["status"].tolist(), ["timeout"])
+        self.assertEqual(result["runtime_seconds"].tolist(), [0.02])
+        self.assertEqual(result["timeout_seconds"].tolist(), [0.02])
+
+    def test_summary_runtime_statistics_use_successful_solves(self):
+        table = benchmark_module.results_dataframe(
+            [
+                {
+                    "puzzle_index": 1,
+                    "solver_name": "fake",
+                    "result": SolverResult(
+                        solution="1 2 3 4",
+                        status="solved",
+                        runtime_seconds=0.1,
+                    ),
+                },
+                {
+                    "puzzle_index": 2,
+                    "solver_name": "fake",
+                    "result": SolverResult(
+                        solution="1 2 3 4",
+                        status="solved",
+                        runtime_seconds=0.3,
+                    ),
+                },
+                {
+                    "puzzle_index": 3,
+                    "solver_name": "fake",
+                    "result": SolverResult(
+                        solution=None,
+                        status="timeout",
+                        runtime_seconds=2.0,
+                    ),
+                },
+            ]
+        )
+
+        summary = benchmark_module.summary_dataframe(table).iloc[0]
+
+        self.assertEqual(summary["solved"], 2)
+        self.assertEqual(summary["tested"], 3)
+        self.assertEqual(summary["timeouts"], 1)
+        self.assertAlmostEqual(summary["avg_runtime_s"], 0.2)
+        self.assertAlmostEqual(summary["median_runtime_s"], 0.2)
+        self.assertAlmostEqual(summary["p95_runtime_s"], 0.29)
+        self.assertAlmostEqual(summary["throughput_puzzles_s"], 2 / 2.4)
+
     def test_benchmark_dataset_reports_solver_process_crash(self):
         record = generate_dataset_records(4, "easy", 1, seed=123, verify=False)[0]
 

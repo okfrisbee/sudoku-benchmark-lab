@@ -7,9 +7,13 @@ from config import load_config
 CSV_FIELDS = [
     "size",
     "difficulty",
+    "clue_percent",
     "clues",
+    "puzzle_id",
+    "puzzle_seed",
     "puzzle_index",
     "solver",
+    "timeout_seconds",
     "status",
     "runtime_seconds",
     "setup_seconds",
@@ -41,9 +45,13 @@ def _result_row(puzzle_index, solver_name, result, metadata=None):
     return {
         "size": metadata.get("size", ""),
         "difficulty": metadata.get("difficulty", ""),
+        "clue_percent": metadata.get("clue_percent", ""),
         "clues": metadata.get("clues", ""),
+        "puzzle_id": metadata.get("puzzle_id", puzzle_index),
+        "puzzle_seed": metadata.get("puzzle_seed", ""),
         "puzzle_index": puzzle_index,
         "solver": solver_name,
+        "timeout_seconds": metadata.get("timeout_seconds", ""),
         "status": result.status,
         "runtime_seconds": result.runtime_seconds,
         "setup_seconds": 0.0 if result.setup_seconds is None else result.setup_seconds,
@@ -90,6 +98,9 @@ def print_summary_table(table):
                     "success_rate": "{:.1f}%".format,
                     "total_runtime_s": _format_number,
                     "avg_runtime_s": _format_number,
+                    "median_runtime_s": _format_number,
+                    "p95_runtime_s": _format_number,
+                    "throughput_puzzles_s": _format_number,
                     "setup_avg_s": _format_number,
                     "solve_avg_s": _format_number,
                     "backtracks_avg": _format_number,
@@ -114,25 +125,34 @@ def _summary_row(name, table, tested):
         "assignments",
         "recursive_calls",
     ]
-    solved = int(table["solution_found"].sum()) if not table.empty else 0
+    solved_table = table[table["solution_found"]]
+    solved = len(solved_table)
     total_runtime = table["runtime_seconds"].sum() if not table.empty else 0.0
-    avg_runtime = total_runtime / tested if tested else 0.0
+    avg_runtime = solved_table["runtime_seconds"].mean()
+    median_runtime = solved_table["runtime_seconds"].median()
+    p95_runtime = solved_table["runtime_seconds"].quantile(0.95)
     success_rate = (solved / tested * 100) if tested else 0.0
-    averages = table[average_fields].mean()
+    averages = solved_table[average_fields].mean()
     solve_average = averages["solve_seconds"]
 
-    if pd.isna(solve_average) and (
-        not table.empty and table["status"].ne("error").any()
-    ):
+    if pd.isna(solve_average) and solved:
         solve_average = avg_runtime
+
+    throughput = solved / total_runtime if total_runtime > 0 else 0.0
 
     return {
         "solver": name,
         "solved": solved,
         "tested": tested,
         "success_rate": success_rate,
+        "timeouts": int(table["status"].eq("timeout").sum()),
+        "failures": int(table["status"].eq("failed").sum()),
+        "errors": int(table["status"].eq("error").sum()),
         "total_runtime_s": total_runtime,
         "avg_runtime_s": avg_runtime,
+        "median_runtime_s": median_runtime,
+        "p95_runtime_s": p95_runtime,
+        "throughput_puzzles_s": throughput,
         "setup_avg_s": averages["setup_seconds"],
         "solve_avg_s": solve_average,
         "backtracks_avg": averages["backtracks"],
