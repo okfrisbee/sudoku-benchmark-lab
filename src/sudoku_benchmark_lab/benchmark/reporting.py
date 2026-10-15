@@ -15,6 +15,7 @@ CSV_FIELDS = [
     "solver",
     "timeout_seconds",
     "status",
+    "solver_solution",
     "runtime_seconds",
     "setup_seconds",
     "solve_seconds",
@@ -50,6 +51,7 @@ def _result_row(puzzle_index, solver_name, result, metadata=None):
         "solver": solver_name,
         "timeout_seconds": metadata.get("timeout_seconds", ""),
         "status": result.status,
+        "solver_solution": _serialize_solution(result.solution),
         "runtime_seconds": result.runtime_seconds,
         "setup_seconds": 0.0 if result.setup_seconds is None else result.setup_seconds,
         "solve_seconds": result.solve_seconds,
@@ -59,6 +61,18 @@ def _result_row(puzzle_index, solver_name, result, metadata=None):
         "solution_found": result.solved,
         "error": result.error or "",
     }
+
+
+def _serialize_solution(solution):
+    if solution is None:
+        return ""
+    from sudoku_benchmark_lab.board import format_board, parse_board
+
+    try:
+        return format_board(parse_board(solution))
+    except (TypeError, ValueError):
+        # Keep malformed solver output in the CSV for debugging.
+        return str(solution)
 
 
 def results_dataframe(csv_rows):

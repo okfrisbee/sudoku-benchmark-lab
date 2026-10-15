@@ -20,3 +20,5 @@ a way that would produce different datasets for the same case names.
 `run_01.toml` preserves the exact suite configuration recorded for the
 published run. Its legacy `output_dir` field is retained for historical
 provenance; current suite executions use the timestamped layout described above.
+The frozen published raw-results CSV predates the `solver_solution` column;
+new suite runs include each solver's returned board in that column.

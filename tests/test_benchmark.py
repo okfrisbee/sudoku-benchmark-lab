@@ -54,6 +54,26 @@ class BenchmarkTests(unittest.TestCase):
         self.assertAlmostEqual(summary["median_runtime_s"], 0.2)
         self.assertAlmostEqual(summary["throughput_puzzles_s"], 2 / 2.4)
 
+    def test_results_csv_keeps_solver_answers_and_empty_answers(self):
+        invalid_answer = "1 " * 16
+        rows = [
+            {
+                "puzzle_index": 1,
+                "solver_name": "invalid",
+                "result": SolverResult(invalid_answer, "error", 0.01),
+            },
+            {
+                "puzzle_index": 2,
+                "solver_name": "timed_out",
+                "result": SolverResult(None, "timeout", 1.0),
+            },
+        ]
+
+        table = results_dataframe(rows)
+
+        self.assertEqual(table.loc[0, "solver_solution"], " ".join(["1"] * 16))
+        self.assertEqual(table.loc[1, "solver_solution"], "")
+
     def test_result_data_and_filter_validation(self):
         records = generate_dataset_records(4, "easy", 1, seed=123)
         with tempfile.TemporaryDirectory() as root:
@@ -70,6 +90,8 @@ class BenchmarkTests(unittest.TestCase):
                 write_csv(summary_dataframe(table), summary_path)
                 self.assertTrue(csv_path.exists())
                 self.assertTrue(summary_path.exists())
+                self.assertIn("solver_solution", table.columns)
+                self.assertTrue(table.loc[0, "solver_solution"])
 
         self.assertEqual(table["status"].tolist(), ["solved"])
         self.assertEqual(table["size"].tolist(), [4])
