@@ -21,7 +21,7 @@ from typing import Any
 import pandas as pd
 
 from sudoku_benchmark_lab.config import load_config
-from sudoku_benchmark_lab.config import config_path as project_config_path
+from sudoku_benchmark_lab.config import load_config
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
 from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver, solver_label
 from sudoku_benchmark_lab.benchmark.reporting import summary_dataframe
@@ -37,7 +37,7 @@ DEFAULT_CONFIG_PATH = PROJECT_ROOT / "data/research_benchmark/final_benchmark.to
 SOURCE_FILES = [
     Path("src/sudoku_benchmark_lab") / path for path in (
         "benchmark/reporting.py", "benchmark/runner.py", "benchmark/suite.py",
-        "board.py", "validation.py", "datasets/generation.py", "datasets/io.py",
+        "board.py", "config.py", "validation.py", "datasets/generation.py", "datasets/io.py",
         "solvers/registry.py", "solvers/result.py", "solvers/csp.py",
         "solvers/dlx.py", "solvers/naive.py", "solvers/naive_recursive.py",
         "solvers/sat.py", "solvers/smt.py",
@@ -131,7 +131,9 @@ def run_suite(
     datasets_dir = destination / "datasets"
     datasets_dir.mkdir()
     shutil.copy2(config_path, destination / "suite_config.toml")
-    shutil.copy2(project_config_path(), destination / "project_config.toml")
+    project_config_path = destination / "project_config.json"
+    project_config_text = json.dumps(load_config(), indent=2, sort_keys=True) + "\n"
+    project_config_path.write_text(project_config_text, encoding="utf-8")
 
     started_at = datetime.now().astimezone()
     wall_start = time.perf_counter()
@@ -215,7 +217,7 @@ def run_suite(
         config_path=config_path,
         destination=destination,
         dataset_files=dataset_files,
-        result_files=[raw_path, case_summary_path, size_summary_path, readme_tables_path],
+        result_files=[raw_path, case_summary_path, size_summary_path, readme_tables_path, project_config_path],
         started_at=started_at,
         finished_at=finished_at,
         wall_seconds=time.perf_counter() - wall_start,
@@ -380,7 +382,9 @@ def _environment_metadata(
         "clue_percent_ranges": load_config()["generation"]["clue_percent_ranges"],
         "source_revision": _git_revision(),
         "suite_config_sha256": _sha256(config_path),
-        "project_config_sha256": _sha256(project_config_path()),
+        "project_config_sha256": hashlib.sha256(
+            json.dumps(load_config(), sort_keys=True).encode("utf-8")
+        ).hexdigest(),
         "source_file_sha256": {
             str(path): _sha256(PROJECT_ROOT / path)
             for path in SOURCE_FILES if (PROJECT_ROOT / path).exists()

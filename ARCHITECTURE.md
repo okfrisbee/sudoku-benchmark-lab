@@ -27,6 +27,6 @@ The runner charges a timed-out attempt exactly its time limit. Successful runtim
 
 ## Configuration and historical evidence
 
-`config.py` validates `config.toml` when an operation needs it and resolves relative data paths from that file's directory. An explicit config path can be supplied programmatically; the packaged default is a fallback outside a source checkout. Suite outputs copy their configuration and capture source and artifact hashes. Use a new output directory for each study.
+Application settings live in `config.py` as validated Python defaults; callers can pass nested overrides to `load_config()`. Paths default to the checkout's `data/` folders, or to `data/` under the current directory when installed outside a checkout. Research case matrices remain in TOML because they describe individual experiments. Each suite output snapshots the application settings to `project_config.json` and captures source and artifact hashes. Use a new output directory for each study.
 
 The original research datasets, CSVs, and metadata under `data/research_benchmark/final/` are frozen evidence. The paths and hashes in their `metadata.json` refer to the original source revision. Moving code does not rewrite that history. `data/research_benchmark/verify_readme.py` checks the published README and BENCHMARK tables against those saved results.

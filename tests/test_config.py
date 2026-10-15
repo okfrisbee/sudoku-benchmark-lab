@@ -1,80 +1,33 @@
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
-from sudoku_benchmark_lab.config import load_config
-from tests.config_helpers import write_config
+from sudoku_benchmark_lab.config import DEFAULT_CONFIG, load_config
 
 
 class ConfigTests(unittest.TestCase):
-    def test_load_config_reads_valid_toml(self):
+    def test_defaults_are_complete_and_copied(self):
+        config = load_config()
+        self.assertEqual(config["generation"]["clue_percent_ranges"]["easy"], (0.75, 0.85))
+        self.assertEqual(config["benchmark"]["solver_timeout_seconds"], 60.0)
+        config["paths"]["datasets_dir"] = "changed"
+        self.assertNotEqual(DEFAULT_CONFIG["paths"]["datasets_dir"], "changed")
+
+    def test_nested_overrides(self):
         with tempfile.TemporaryDirectory() as root:
-            config_path = write_config(
-                root,
-                datasets_dir=Path(root) / "datasets",
-                benchmark_results_dir=Path(root) / "results",
-                solver_timeout_seconds=12.5,
-            )
-
-            config = load_config(config_path)
-
-        self.assertEqual(config["paths"]["datasets_dir"], str(Path(root) / "datasets"))
-        self.assertEqual(
-            config["paths"]["benchmark_results_dir"],
-            str(Path(root) / "results"),
-        )
-        self.assertEqual(
-            config["generation"]["clue_percent_ranges"]["easy"],
-            (0.75, 0.85),
-        )
+            config = load_config({
+                "paths": {"datasets_dir": str(Path(root) / "puzzles")},
+                "benchmark": {"solver_timeout_seconds": 12.5},
+            })
+        self.assertEqual(config["paths"]["datasets_dir"], str(Path(root) / "puzzles"))
         self.assertEqual(config["benchmark"]["solver_timeout_seconds"], 12.5)
+        self.assertEqual(config["generation"]["clue_percent_ranges"]["hard"], (0.25, 0.35))
 
-    def test_load_config_rejects_missing_required_section(self):
-        with tempfile.TemporaryDirectory() as root:
-            config_path = Path(root) / "config.toml"
-            config_path.write_text(
-                "\n".join(
-                    [
-                        "[paths]",
-                        'datasets_dir = "data/datasets"',
-                        'benchmark_results_dir = "data/results"',
-                        "",
-                    ]
-                ),
-                encoding="utf-8",
-            )
-
-            with self.assertRaisesRegex(ValueError, "generation"):
-                load_config(config_path)
-
-    def test_load_config_rejects_invalid_clue_range(self):
-        with tempfile.TemporaryDirectory() as root:
-            config_path = write_config(
-                root,
-                datasets_dir=Path(root) / "datasets",
-                benchmark_results_dir=Path(root) / "results",
-                clue_percent_ranges={"easy": (0.9, 0.7)},
-            )
-
-            with self.assertRaisesRegex(ValueError, "easy"):
-                load_config(config_path)
-
-    def test_load_config_rejects_non_positive_timeout(self):
-        with tempfile.TemporaryDirectory() as root:
-            config_path = write_config(
-                root,
-                datasets_dir=Path(root) / "datasets",
-                benchmark_results_dir=Path(root) / "results",
-                solver_timeout_seconds=0,
-            )
-
-            with self.assertRaisesRegex(ValueError, "solver_timeout_seconds"):
-                load_config(config_path)
-
-    def test_load_config_rejects_missing_file(self):
-        with tempfile.TemporaryDirectory() as root:
-            with self.assertRaises(FileNotFoundError):
-                load_config(Path(root) / "config.toml")
+    def test_invalid_overrides_are_rejected(self):
+        with self.assertRaisesRegex(ValueError, "positive number"):
+            load_config({"benchmark": {"solver_timeout_seconds": 0}})
+        with self.assertRaisesRegex(ValueError, "(?i)clue percent range"):
+            load_config({"generation": {"clue_percent_ranges": {"easy": (0.9, 0.7)}}})
 
 
 if __name__ == "__main__":

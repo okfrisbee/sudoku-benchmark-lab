@@ -1,100 +1,96 @@
+"""Project settings and validation for Sudoku Benchmark Lab."""
+
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
-import tomllib
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-CONFIG_PATH = PROJECT_ROOT / "config.toml"
+DATA_ROOT = (
+    PROJECT_ROOT
+    if (PROJECT_ROOT / "pyproject.toml").exists()
+    else Path.cwd()
+)
+
+# Keep the complete application configuration here so source and installed
+# runs use the same defaults without depending on a working-directory file.
+DEFAULT_CONFIG: dict[str, Any] = {
+    "paths": {
+        "datasets_dir": str(DATA_ROOT / "data" / "datasets"),
+        "benchmark_results_dir": str(DATA_ROOT / "data" / "results"),
+    },
+    "generation": {
+        "clue_percent_ranges": {
+            "easy": (0.75, 0.85),
+            "medium": (0.50, 0.60),
+            "hard": (0.25, 0.35),
+        },
+    },
+    "benchmark": {"solver_timeout_seconds": 60.0},
+}
 
 
-def config_path(path: str | Path | None = None) -> Path:
-    if path is not None:
-        return Path(path).resolve()
-    return CONFIG_PATH if CONFIG_PATH.exists() else Path(__file__).with_name("default_config.toml")
+def load_config(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Return a validated copy of the defaults, with optional nested overrides."""
+    config = deepcopy(DEFAULT_CONFIG)
+    if overrides is not None:
+        if not isinstance(overrides, dict):
+            raise ValueError("Config overrides must be a mapping")
+        _merge(config, overrides)
+    _validate(config)
+    return config
 
 
-def load_config(path: str | Path | None = None) -> dict[str, Any]:
-    source = config_path(path)
-    if not source.exists():
-        raise FileNotFoundError(f"Required config file not found: {source}")
+def _merge(target: dict[str, Any], overrides: dict[str, Any]) -> None:
+    for key, value in overrides.items():
+        if key not in target:
+            raise ValueError(f"Unknown config setting: {key}")
+        if isinstance(target[key], dict) and isinstance(value, dict):
+            _merge(target[key], value)
+        elif isinstance(target[key], dict) != isinstance(value, dict):
+            raise ValueError(f"Config setting '{key}' has the wrong type")
+        else:
+            target[key] = value
 
-    with source.open("rb") as config_file:
-        config = tomllib.load(config_file)
 
+def _validate(config: dict[str, Any]) -> None:
     paths = _table(config, "paths")
+    paths["datasets_dir"] = _non_empty_string(paths, "datasets_dir")
+    paths["benchmark_results_dir"] = _non_empty_string(paths, "benchmark_results_dir")
+
     generation = _table(config, "generation")
+    ranges = _table(generation, "clue_percent_ranges")
+    if not ranges:
+        raise ValueError("clue_percent_ranges must define at least one range")
+    validated = {}
+    for name, bounds in ranges.items():
+        if not isinstance(name, str) or not name.strip() or not isinstance(bounds, (tuple, list)) or len(bounds) != 2 or not all(_is_number(v) for v in bounds):
+            raise ValueError(f"Clue percent range for {name!r} must be two numbers")
+        low, high = float(bounds[0]), float(bounds[1])
+        if not 0.0 <= low <= high <= 1.0:
+            raise ValueError(f"Clue percent range for {name!r} must satisfy 0 <= low <= high <= 1")
+        validated[name] = (low, high)
+    generation["clue_percent_ranges"] = validated
+
     benchmark = _table(config, "benchmark")
-
-    return {
-        "paths": {
-            "datasets_dir": str(_resolve_path(source, _non_empty_string(paths, "datasets_dir"))),
-            "benchmark_results_dir": str(_resolve_path(source, _non_empty_string(paths, "benchmark_results_dir"))),
-        },
-        "generation": {
-            "clue_percent_ranges": _clue_ranges(
-                _table(generation, "clue_percent_ranges")
-            ),
-        },
-        "benchmark": {
-            "solver_timeout_seconds": _positive_number(
-                benchmark,
-                "solver_timeout_seconds",
-            ),
-        },
-    }
-
-
-def _resolve_path(source: Path, value: str) -> Path:
-    candidate = Path(value)
-    return candidate if candidate.is_absolute() else source.parent / candidate
+    timeout = benchmark.get("solver_timeout_seconds")
+    if not _is_number(timeout) or timeout <= 0:
+        raise ValueError("solver_timeout_seconds must be a positive number")
+    benchmark["solver_timeout_seconds"] = float(timeout)
 
 
 def _table(config: dict[str, Any], key: str) -> dict[str, Any]:
     value = config.get(key)
     if not isinstance(value, dict):
-        raise ValueError(f"Config key '{key}' must be a table.")
+        raise ValueError(f"Config key '{key}' must be a mapping")
     return value
 
 
 def _non_empty_string(config: dict[str, Any], key: str) -> str:
     value = config.get(key)
     if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"Config key '{key}' must be a non-empty string.")
+        raise ValueError(f"Config key '{key}' must be a non-empty string")
     return value
-
-
-def _positive_number(config: dict[str, Any], key: str) -> float:
-    value = config.get(key)
-    if not _is_number(value) or value <= 0:
-        raise ValueError(f"Config key '{key}' must be a positive number.")
-    return float(value)
-
-
-def _clue_ranges(ranges: dict[str, Any]) -> dict[str, tuple[float, float]]:
-    if not ranges:
-        raise ValueError("Config key 'clue_percent_ranges' must define at least one range.")
-
-    validated = {}
-    for difficulty, range_value in ranges.items():
-        if (
-            not isinstance(difficulty, str)
-            or not difficulty.strip()
-            or not isinstance(range_value, list)
-            or len(range_value) != 2
-            or not all(_is_number(value) for value in range_value)
-        ):
-            raise ValueError(
-                f"Clue percent range for '{difficulty}' must be two numbers."
-            )
-
-        low, high = float(range_value[0]), float(range_value[1])
-        if not 0.0 <= low <= high <= 1.0:
-            raise ValueError(
-                f"Clue percent range for '{difficulty}' must satisfy 0.0 <= low <= high <= 1.0."
-            )
-        validated[difficulty] = (low, high)
-
-    return validated
 
 
 def _is_number(value: Any) -> bool:

@@ -24,8 +24,5 @@ sudoku-research = "sudoku_benchmark_lab.benchmark.suite:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-sudoku_benchmark_lab = ["default_config.toml"]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
