@@ -11,6 +11,7 @@ from sudoku_benchmark_lab.benchmark.suite import (
     load_suite_config,
     run_suite,
 )
+from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
 
 
 def write_suite_config(path: Path, *, solvers='["csp"]', duplicate=False) -> None:
@@ -91,6 +92,33 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
                 self.assertNotEqual(first, second)
                 self.assertTrue((first / "metadata.json").exists())
                 self.assertTrue((second / "metadata.json").exists())
+
+    def test_existing_dataset_is_reused_without_rewriting_it(self):
+        with tempfile.TemporaryDirectory() as root:
+            root = Path(root)
+            config = root / "run_03.toml"
+            destination = root / "results"
+            datasets = root / "datasets"
+            dataset_path = datasets / "4x4_easy.jsonl"
+            datasets.mkdir()
+            write_suite_config(config, solvers='["naive"]')
+
+            records = generate_dataset_records(4, "easy", 2, seed=123)
+            for record in records:
+                record["verification_mode"] = "legacy"
+            dataset_path.write_text(
+                "".join(json.dumps(record, sort_keys=True) + "\n" for record in records),
+                encoding="utf-8",
+            )
+            original_dataset = dataset_path.read_bytes()
+
+            run_suite(config, destination, datasets)
+
+            self.assertEqual(dataset_path.read_bytes(), original_dataset)
+            metadata = json.loads(
+                (destination / "metadata.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(metadata["dataset_files"][0]["source"], "reused_existing")
 
     def test_loads_valid_case_matrix(self):
         with tempfile.TemporaryDirectory() as root:

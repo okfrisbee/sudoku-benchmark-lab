@@ -20,7 +20,9 @@ from typing import Any
 import pandas as pd
 
 from sudoku_benchmark_lab.config import load_config
+from sudoku_benchmark_lab.board import board_size, parse_board
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
+from sudoku_benchmark_lab.datasets.io import read_dataset
 from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver
 from sudoku_benchmark_lab.benchmark.reporting import summary_dataframe
 from sudoku_benchmark_lab.benchmark.runner import (
@@ -133,19 +135,29 @@ def run_suite(
 
     prepared_cases = []
     for case in suite["cases"]:
-        print(
-            f"\nGenerating {case['count']} deterministic {case['name']} puzzles "
-            f"(seed={case['seed']})..."
-        )
-        records = generate_dataset_records(
-            case["size"],
-            case["difficulty"],
-            case["count"],
-            seed=case["seed"],
-        )
         dataset_path = datasets_dir / f"{case['name']}.jsonl"
-        _write_dataset_without_replacing(dataset_path, records)
-        prepared_cases.append((case, records, dataset_path))
+        if dataset_path.exists():
+            records = read_dataset(dataset_path)
+            _validate_existing_dataset(dataset_path, records, case)
+            dataset_source = "reused_existing"
+            print(
+                f"\nUsing existing dataset for {case['name']}: "
+                f"{dataset_path} ({len(records)} puzzles)"
+            )
+        else:
+            print(
+                f"\nGenerating {case['count']} deterministic {case['name']} puzzles "
+                f"(seed={case['seed']})..."
+            )
+            records = generate_dataset_records(
+                case["size"],
+                case["difficulty"],
+                case["count"],
+                seed=case["seed"],
+            )
+            _write_dataset_without_replacing(dataset_path, records)
+            dataset_source = "generated"
+        prepared_cases.append((case, records, dataset_path, dataset_source))
 
     destination = Path(output_dir) if output_dir else _new_results_directory(run_name)
     if destination.exists() and any(destination.iterdir()):
@@ -161,13 +173,15 @@ def run_suite(
     raw_tables = []
     case_summaries = []
     dataset_files = []
+    dataset_sources = {}
 
     print(f"Benchmark suite: {suite['name']}")
     print(f"Output: {destination}")
 
     warmup_complete = False
-    for case, records, dataset_path in prepared_cases:
+    for case, records, dataset_path, dataset_source in prepared_cases:
         dataset_files.append(dataset_path)
+        dataset_sources[str(dataset_path)] = dataset_source
 
         if suite["warmup"] and not warmup_complete:
             print("Warming each solver once (not recorded)...")
@@ -221,6 +235,7 @@ def run_suite(
         config_path=config_path,
         destination=destination,
         dataset_files=dataset_files,
+        dataset_sources=dataset_sources,
         result_files=[raw_path, case_summary_path, size_summary_path, project_config_path],
         started_at=started_at,
         finished_at=finished_at,
@@ -264,6 +279,7 @@ def _environment_metadata(
     config_path: Path,
     destination: Path,
     dataset_files: list[Path],
+    dataset_sources: dict[str, str],
     result_files: list[Path],
     started_at: datetime,
     finished_at: datetime,
@@ -337,10 +353,36 @@ def _environment_metadata(
                 if path.resolve().is_relative_to(PROJECT_ROOT)
                 else str(path.resolve()),
                 "sha256": _sha256(path),
+                "source": dataset_sources[str(path)],
             }
             for path in dataset_files
         ],
     }
+
+
+def _validate_existing_dataset(
+    path: Path,
+    records: list[dict[str, Any]],
+    case: dict[str, Any],
+) -> None:
+    if len(records) != case["count"]:
+        raise ValueError(
+            f"Existing dataset {path} contains {len(records)} puzzles; "
+            f"the suite config expects {case['count']}."
+        )
+    for index, record in enumerate(records, 1):
+        actual_size, _box = board_size(parse_board(record["puzzle"]))
+        if actual_size != case["size"]:
+            raise ValueError(
+                f"Puzzle {index} in {path} has size {actual_size}; "
+                f"the suite config expects {case['size']}."
+            )
+        difficulty = record.get("difficulty")
+        if difficulty is not None and difficulty != case["difficulty"]:
+            raise ValueError(
+                f"Puzzle {index} in {path} has clue level {difficulty!r}; "
+                f"the suite config expects {case['difficulty']!r}."
+            )
 
 
 def _write_dataset_without_replacing(
@@ -361,8 +403,8 @@ def _write_dataset_without_replacing(
         if path.exists():
             if _sha256(path) != _sha256(temporary_path):
                 raise FileExistsError(
-                    f"Dataset already exists with different contents: {path}. "
-                    "Use a new suite config filename to preserve both versions."
+                    f"Dataset appeared during generation with different contents: {path}. "
+                    "Retry the suite to load and validate the saved dataset."
                 )
             return
         temporary_path.replace(path)

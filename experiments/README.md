@@ -15,7 +15,10 @@ code and input datasets.
 
 Run metadata records the selected config and dataset hashes, environment, source
 revision, and result hashes. Use a new config filename when changing a suite in
-a way that would produce different datasets for the same case names.
+a way that would produce different datasets for the same case names. On rerun,
+an existing case dataset is reused as-is when its count, board size, and clue
+level match the config; metadata marks whether each dataset was generated or
+reused.
 
 `run_01.toml` preserves the exact suite configuration recorded for the
 published run. Its legacy `output_dir` field is retained for historical
