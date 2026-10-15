@@ -16,3 +16,7 @@ code and input datasets.
 Run metadata records the selected config and dataset hashes, environment, source
 revision, and result hashes. Use a new config filename when changing a suite in
 a way that would produce different datasets for the same case names.
+
+`run_01.toml` preserves the exact suite configuration recorded for the
+published run. Its legacy `output_dir` field is retained for historical
+provenance; current suite executions use the timestamped layout described above.
