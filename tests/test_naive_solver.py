@@ -17,10 +17,6 @@ def pattern_solution(size: int) -> list[int]:
 
 
 class NaiveIterativeSolverTests(unittest.TestCase):
-    def test_legacy_function_name_remains_available(self):
-        from sudoku_benchmark_lab.solvers.naive_iterative import solve_naive
-        self.assertIs(solve_naive, solve_naive_iterative)
-
     def test_solves_4x4_puzzle(self):
         result = solve_naive_iterative("1 0 3 0 0 4 0 2 2 0 4 0 0 3 0 1")
 

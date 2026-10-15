@@ -82,8 +82,8 @@ class BenchmarkTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "Unknown solver"):
                     benchmark_dataset(path, solver_names=["missing"])
                 with self.assertRaisesRegex(ValueError, "expected 9"):
-                    benchmark_dataset(path, size=9, solver_names=["naive"])
-                table = benchmark_dataset(path, 4, solver_names=["naive"])
+                    benchmark_dataset(path, size=9, solver_names=["naive_iterative"])
+                table = benchmark_dataset(path, 4, solver_names=["naive_iterative"])
                 summary = summary_dataframe(table).iloc[0]
                 csv_path = result_path(path)
                 write_csv(table, csv_path)

@@ -49,7 +49,7 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             config = Path(root) / "suite.toml"
             destination = Path(root) / "output"
             datasets = Path(root) / "datasets" / "suite"
-            write_suite_config(config, solvers='["naive"]')
+            write_suite_config(config, solvers='["naive_iterative"]')
             output = io.StringIO()
             with redirect_stdout(output):
                 run_suite(config, destination, datasets)
@@ -98,7 +98,7 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             root = Path(root)
             config = root / "run_02.toml"
             datasets = root / "datasets"
-            write_suite_config(config, solvers='["naive"]')
+            write_suite_config(config, solvers='["naive_iterative"]')
             with patch.object(suite_module, "RESULTS_DIR", root / "results"):
                 first = run_suite(config, datasets_root=datasets)
                 second = run_suite(config, datasets_root=datasets)
@@ -116,7 +116,7 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             datasets = root / "datasets"
             dataset_path = datasets / "4x4_easy.jsonl"
             datasets.mkdir()
-            write_suite_config(config, solvers='["naive"]')
+            write_suite_config(config, solvers='["naive_iterative"]')
 
             records = generate_dataset_records(4, "easy", 2, seed=123)
             for record in records:
@@ -147,10 +147,10 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
         self.assertEqual(suite["cases"][0]["count"], 2)
         self.assertEqual(suite["cases"][0]["timeout_seconds"], 0.5)
 
-    def test_legacy_naive_name_resolves_to_canonical_solver(self):
+    def test_current_run_config_uses_canonical_solver_name(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "suite.toml"
-            write_suite_config(path, solvers='["naive"]')
+            write_suite_config(path, solvers='["naive_iterative"]')
 
             suite = load_suite_config(path)
 

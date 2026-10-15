@@ -23,11 +23,7 @@ from sudoku_benchmark_lab.config import load_config
 from sudoku_benchmark_lab.board import board_size, parse_board
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
 from sudoku_benchmark_lab.datasets.io import read_dataset
-from sudoku_benchmark_lab.solvers.registry import (
-    SOLVERS,
-    canonical_solver_name,
-    get_solver,
-)
+from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver
 from sudoku_benchmark_lab.benchmark.reporting import (
     print_summary_table,
     summary_dataframe,
@@ -77,9 +73,6 @@ def load_suite_config(path: str | Path) -> dict[str, Any]:
         raise ValueError("suite.solvers must be a non-empty list of solver names.")
     if len(solvers) != len(set(solvers)):
         raise ValueError("suite.solvers must not contain duplicates.")
-    solvers = [canonical_solver_name(solver) for solver in solvers]
-    if len(solvers) != len(set(solvers)):
-        raise ValueError("suite.solvers must not contain duplicate canonical solver names.")
     unknown_solvers = [solver for solver in solvers if solver not in SOLVERS]
     if unknown_solvers:
         raise ValueError(f"Unknown solver(s): {', '.join(unknown_solvers)}")

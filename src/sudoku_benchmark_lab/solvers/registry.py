@@ -7,10 +7,6 @@ from .result import SolverResult
 
 Solver = Callable[[str | list[int]], SolverResult]
 
-# Legacy suite configs used "naive"; keep accepting that name while presenting
-# naive_iterative as the canonical solver identity.
-SOLVER_ALIASES = {"naive": "naive_iterative"}
-
 # Lazy imports let generation and pure Python solvers work without SAT/SMT extras.
 SOLVERS = {
     "naive_iterative": ("naive_iterative", "solve_naive_iterative", "Naive iterative"),
@@ -22,12 +18,7 @@ SOLVERS = {
 }
 
 
-def canonical_solver_name(name: str) -> str:
-    return SOLVER_ALIASES.get(name, name)
-
-
 def get_solver(name: str) -> Solver:
-    name = canonical_solver_name(name)
     if name not in SOLVERS:
         raise ValueError(f"Unknown solver: {name}")
     module, function, _label = SOLVERS[name]
@@ -35,5 +26,4 @@ def get_solver(name: str) -> Solver:
 
 
 def solver_label(name: str) -> str:
-    name = canonical_solver_name(name)
     return SOLVERS[name][2] if name in SOLVERS else name

@@ -140,6 +140,3 @@ def solve_naive_iterative(board: str | list[int]) -> SolverResult:
         recursive_calls=recursive_calls,
     )
 
-
-# Backward-compatible function name for existing imports.
-solve_naive = solve_naive_iterative
