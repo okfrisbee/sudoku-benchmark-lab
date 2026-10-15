@@ -3,7 +3,7 @@
 Compare six genuinely different ways to solve Sudoku using the same inputs,
 result format, timeout rules, and correctness checks. The project ranges from
 simple backtracking to constraint-based methods, SAT/SMT solvers, and exact
-cover. It also includes dataset generation, puzzle checking, CSV reports, and
+cover. It also includes dataset generation, answer checking, CSV reports, and
 benchmark graphs.
 
 **Main takeaway:** no solver is best everywhere. Simple backtracking wins when
@@ -34,8 +34,9 @@ are not ratings of human puzzle difficulty.
 
 The table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
 calibration work, fixed test settings, timing rules, test machine, complete
-per-tier tables, and limitations. All saved data is under
-[data/research_benchmark](data/research_benchmark/README.md).
+per-tier tables, and limitations. Suite configs and results are under
+[experiments](experiments/README.md); puzzle datasets and ad hoc benchmark
+results are under `datasets/` and `results/`.
 
 ## Quick start
 
@@ -43,15 +44,15 @@ Python 3.11 or newer is recommended. The published benchmark used Python
 3.12.3.
 
 ```bash
-git clone https://github.com/okfrisbee/sudoku-solver.git
-cd sudoku-solver
+git clone https://github.com/okfrisbee/sudoku-benchmark-lab.git
+cd sudoku-benchmark-lab
 python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -e '.[dev]'
 .venv/bin/python main.py
 ```
 
 That starts the interactive application, where you can solve a puzzle, generate
-or check a dataset, or run a comparison. On Windows, replace
+a dataset, or run a comparison. On Windows, replace
 `.venv/bin/python` with `.venv\Scripts\python`.
 
 ## What you can do
@@ -60,14 +61,30 @@ or check a dataset, or run a comparison. On Windows, replace
   solved, failed, errored, or reached the time limit.
 - **Generate repeatable datasets.** A seed recreates the same finished board and
   the same clue pattern.
-- **Check puzzles and answers.** Confirm that a puzzle has a solution, ask
-  whether it has exactly one solution, and independently check solver answers.
+- **Check answers.** Independently check each completed board before recording
+  a solver attempt as successful.
 - **Compare solvers fairly.** Give every solver the same puzzles and time limit,
   and stop slow attempts safely in their own process.
-- **Save useful results.** Write one CSV row per attempt plus summaries for
-  success, timeouts, typical runtime, slow-tail runtime, and throughput.
+- **Save useful results.** Write one CSV row per attempt; summaries are shown
+  in the terminal and can be regenerated from the raw results.
 - **Plot comparisons.** View per-puzzle times and average-time bar charts after
   an interactive benchmark.
+- **Generate a saved report.** Build a Markdown summary and charts from normal
+  benchmark and suite result CSVs with the reusable report script.
+
+After benchmarking, choose **Summarize Results** to print a table for one saved
+CSV. This also works for suite runs and keeps suite cases separate. Normal
+benchmark CSVs are stored as `results/<dataset>/<timestamp>/raw_results.csv`;
+suite CSVs are stored in their timestamped experiment run folder.
+
+Generate a Markdown report from one result CSV with:
+
+```bash
+.venv/bin/python scripts/generate_report.py path/to/raw_results.csv
+```
+
+The script writes `reports/summary.md` and chart images inside the selected
+run folder. Use `--output PATH` to select a different Markdown file path.
 
 ## Six approaches to the same puzzle
 
@@ -166,7 +183,7 @@ These are conclusions from this dataset and machine, not a universal ranking.
 ## Use a solver from Python
 
 ```python
-from solvers.dlx import solve_dlx
+from sudoku_benchmark_lab.solvers.dlx import solve_dlx
 
 puzzle = "1 0 3 0 0 4 0 2 2 0 4 0 0 3 0 1"
 result = solve_dlx(puzzle)
@@ -181,7 +198,7 @@ else:
 Use spaces between cells when values can be greater than 9. In every size, `0`
 means an empty cell.
 
-## Generate and check datasets
+## Generate datasets
 
 The generator starts with a valid, shuffled finished board and removes cells.
 Generated datasets use JSON Lines, with one puzzle record per line.
@@ -200,44 +217,49 @@ also does not guarantee one unique answer. A puzzle with fewer clues may even
 be quicker for a program if it has many valid ways to finish.
 
 ```python
-from generator import generate_dataset, verify_dataset
+from sudoku_benchmark_lab.datasets.generation import generate_dataset
 
 path = generate_dataset(size=9, difficulty="mixed", count=100, seed=123)
-summary = verify_dataset(path, mode="unique")
 print(path)
-print(summary)
 ```
 
-New datasets go to `data/datasets/`. Interactive benchmark results go to
-`data/results/`. The research benchmark’s exact puzzles and results are already
-saved in `data/research_benchmark/`.
+New datasets go to `datasets/`. Interactive benchmark result CSVs go to
+`results/<dataset>/<timestamp>/raw_results.csv`. Suite-generated datasets are stored under
+`datasets/suites/<config-name>/`; suite results go under
+`experiments/results/<config-name>/<timestamp>/`.
+
+Puzzle generation starts from a completed board and removes clues. It does not
+test whether the remaining clues define a unique solution. Older datasets can
+contain `verification_mode` and `unique` fields; readers accept those historical
+records, while new datasets omit the fields.
 
 ## Run your own comparison
 
-To choose a generated dataset and compare one or all solvers:
+To choose a generated dataset and compare one or all solvers, start the
+interactive menu and select **Benchmark**:
 
 ```bash
-.venv/bin/python -m benchmark.runner
+.venv/bin/sudoku-lab
 ```
 
-To repeat the published benchmark, use a new or empty output directory:
+To run a configured benchmark suite, start the menu and select **Run Suite**.
+Every TOML file under `experiments/configs/` is listed. Each run gets its own
+timestamped results folder, while seeded datasets are kept in
+`datasets/suites/<config-name>/`.
 
 ```bash
-.venv/bin/python -m data.research_benchmark.suite \
-  --config data/research_benchmark/final_benchmark.toml \
-  --output-dir /tmp/sudoku-benchmark-reproduction
+.venv/bin/sudoku-lab
 ```
 
-The research suite recreates the seeded puzzles, gives each solver one warm-up
-run, checks every returned answer, and saves the detailed results. It refuses
-to overwrite a non-empty directory.
+The suite recreates the configured seeded puzzles, gives each solver one
+warm-up run when enabled, independently checks every returned answer, and saves
+the detailed results and provenance metadata.
 
 ## Tests and documentation checks
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m data.research_benchmark.verify_readme
 ```
 
-The second command rebuilds the two README result tables from the saved CSVs and
-checks that the full tables in `BENCHMARK.md` match their saved source.
+For package boundaries and development commands, see [ARCHITECTURE.md](ARCHITECTURE.md)
+and [AGENTS.md](AGENTS.md).

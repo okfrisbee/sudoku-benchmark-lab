@@ -1,7 +1,7 @@
 import unittest
 
-from solvers.naive import solve_naive
-from solvers.naive_recursive import solve_naive_recursive
+from sudoku_benchmark_lab.solvers.naive import solve_naive
+from sudoku_benchmark_lab.solvers.naive_recursive import solve_naive_recursive
 
 
 SOLVED_4X4 = "1 2 3 4 3 4 1 2 2 1 4 3 4 3 2 1"

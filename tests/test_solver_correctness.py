@@ -1,11 +1,11 @@
 import importlib
 import unittest
 
-from solvers.csp import CSPSolver, solve_csp
-from solvers.dlx import solve_dlx
-from solvers.metrics import validate_solution
-from solvers.naive import solve_naive
-from solvers.naive_recursive import solve_naive_recursive
+from sudoku_benchmark_lab.solvers.csp import CSPSolver, solve_csp
+from sudoku_benchmark_lab.solvers.dlx import solve_dlx
+from sudoku_benchmark_lab.validation import validate_solution
+from sudoku_benchmark_lab.solvers.naive import solve_naive
+from sudoku_benchmark_lab.solvers.naive_recursive import solve_naive_recursive
 
 
 SOLVED_4X4 = "1 2 3 4 3 4 1 2 2 1 4 3 4 3 2 1"
@@ -27,8 +27,8 @@ SOLVERS = [
     ("naive_recursive", solve_naive_recursive),
     ("csp", solve_csp),
     ("dlx", solve_dlx),
-    ("sat", optional_solver("solvers.sat", "solve_sudoku")),
-    ("smt", optional_solver("solvers.smt", "solve_smt")),
+    ("sat", optional_solver("sudoku_benchmark_lab.solvers.sat", "solve_sudoku")),
+    ("smt", optional_solver("sudoku_benchmark_lab.solvers.smt", "solve_smt")),
 ]
 
 
