@@ -4,7 +4,7 @@ from sudoku_benchmark_lab.board import board_size, format_board, parse_board
 from sudoku_benchmark_lab.solvers.result import SolverResult
 
 
-def solve_naive(board: str | list[int]) -> SolverResult:
+def solve_naive_iterative(board: str | list[int]) -> SolverResult:
     start = time.perf_counter()
     recursive_calls = 0
     assignments = 0
@@ -139,3 +139,4 @@ def solve_naive(board: str | list[int]) -> SolverResult:
         assignments=assignments,
         recursive_calls=recursive_calls,
     )
+

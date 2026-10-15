@@ -9,7 +9,7 @@ Solver = Callable[[str | list[int]], SolverResult]
 
 # Lazy imports let generation and pure Python solvers work without SAT/SMT extras.
 SOLVERS = {
-    "naive": ("naive", "solve_naive", "Naive"),
+    "naive_iterative": ("naive_iterative", "solve_naive_iterative", "Naive iterative"),
     "naive_recursive": ("naive_recursive", "solve_naive_recursive", "Naive recursive"),
     "csp": ("csp", "solve_csp", "CSP"),
     "sat": ("sat", "solve_sudoku", "SAT"),

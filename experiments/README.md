@@ -27,8 +27,8 @@ one selected CSV. Run `python scripts/generate_report.py PATH/TO/raw_results.csv
 to write `reports/summary.md` and chart assets inside that run folder. The frozen
 published run retains its original summary CSVs as historical evidence.
 
-`run_01.toml` preserves the exact suite configuration recorded for the
-published run. Its legacy `output_dir` field is retained for historical
+`run_01.toml` uses the current canonical solver name. The frozen run metadata
+preserves the exact configuration hash recorded for the published run. Its legacy `output_dir` field is retained for historical
 provenance; current suite executions use the timestamped layout described above.
 The frozen published raw-results CSV predates the `solver_solution` column;
 new suite runs include each solver's returned board in that column.

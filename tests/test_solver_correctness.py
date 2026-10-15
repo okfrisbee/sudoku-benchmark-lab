@@ -4,7 +4,7 @@ import unittest
 from sudoku_benchmark_lab.solvers.csp import CSPSolver, solve_csp
 from sudoku_benchmark_lab.solvers.dlx import solve_dlx
 from sudoku_benchmark_lab.validation import validate_solution
-from sudoku_benchmark_lab.solvers.naive import solve_naive
+from sudoku_benchmark_lab.solvers.naive_iterative import solve_naive_iterative
 from sudoku_benchmark_lab.solvers.naive_recursive import solve_naive_recursive
 
 
@@ -23,7 +23,7 @@ def optional_solver(module_name, function_name):
 
 
 SOLVERS = [
-    ("naive", solve_naive),
+    ("naive_iterative", solve_naive_iterative),
     ("naive_recursive", solve_naive_recursive),
     ("csp", solve_csp),
     ("dlx", solve_dlx),
@@ -99,7 +99,7 @@ class SolverCorrectnessTests(unittest.TestCase):
             for col in range(size)
         ]
 
-        result = solve_naive(solved)
+        result = solve_naive_iterative(solved)
 
         self.assertTrue(result.solved, result.error)
         self.assertEqual(result.solution, " ".join(map(str, solved)))

@@ -32,6 +32,8 @@ are not ratings of human puzzle difficulty.
 | 36×36 | Across all six solvers: high-clue 24/24, mid-clue 4/18, and low-clue 0/18 (18 timeouts). |
 <!-- BENCHMARK_HIGHLIGHTS_END -->
 
+The published result tables retain the historical label “Naive.” The current solver name and suite config entry are **Naive iterative** (`naive_iterative`).
+
 The table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
 calibration work, fixed test settings, timing rules, test machine, complete
 per-tier tables, and limitations. Suite configs and results are under
@@ -90,7 +92,7 @@ run folder. Use `--output PATH` to select a different Markdown file path.
 
 These implementations do more than vary one backtracking routine:
 
-- **Naive** tries values in board order while keeping quick row, column, and box
+- **Naive iterative** tries values in board order while keeping quick row, column, and box
   lookup sets. It has very little startup work.
 - **Naive recursive** performs the same kind of trial and error using a simpler
   recursive function and direct validity checks.

@@ -1,8 +1,9 @@
 [suite]
+# Updated solver name; the frozen run metadata preserves the original config hash.
 name = "sudoku-solvers-2026-09-04"
 output_dir = "benchmark/artifacts/2026-09-04/final"
 warmup = true
-solvers = ["naive", "naive_recursive", "csp", "sat", "smt", "dlx"]
+solvers = ["naive_iterative", "naive_recursive", "csp", "sat", "smt", "dlx"]
 
 [[cases]]
 name = "9x9_easy"
