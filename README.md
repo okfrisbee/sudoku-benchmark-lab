@@ -83,8 +83,8 @@ Generate a Markdown report from one result CSV with:
 .venv/bin/python scripts/generate_report.py path/to/raw_results.csv
 ```
 
-The script writes `summary.md` and chart images alongside the selected CSV.
-Use `--output PATH` to select a different Markdown file path.
+The script writes `reports/summary.md` and chart images inside the selected
+run folder. Use `--output PATH` to select a different Markdown file path.
 
 ## Six approaches to the same puzzle
 

@@ -49,11 +49,10 @@ def create_markdown_report(
     output = (
         Path(output_path).resolve()
         if output_path is not None
-        else source.parent / "summary.md"
+        else source.parent / "reports" / "summary.md"
     )
     output.parent.mkdir(parents=True, exist_ok=True)
-    assets_dir = output.parent / "summary_assets"
-    assets_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir = output.parent
 
     sections = [
         f"# Benchmark Summary: {source.stem}",
@@ -65,13 +64,14 @@ def create_markdown_report(
         "",
     ]
     summary = summarize_result_csv(source)
+    raw = _read_result_csv(source)
     chart_data = summary.copy()
     if "case" not in chart_data:
         chart_data.insert(0, "case", source.stem)
     chart_data = chart_data.rename(columns={"case": "Case", "solver": "Solver"})
     stem = _safe_stem(source.stem)
-    success_chart = assets_dir / f"{stem}_success_rate.png"
-    runtime_chart = assets_dir / f"{stem}_median_runtime.png"
+    success_chart = reports_dir / f"{stem}_success_rate.png"
+    runtime_chart = reports_dir / f"{stem}_median_runtime.png"
     _plot_metric(chart_data, "success_rate", success_chart, "Success rate (%)", percent=True)
     _plot_metric(
         chart_data,
@@ -80,9 +80,16 @@ def create_markdown_report(
         "Median successful runtime (seconds)",
         logarithmic=True,
     )
+    sections.extend(["## Solver summary", "", _markdown_table(summary), ""])
+    by_size = _size_summary_markdown(raw)
+    if by_size:
+        sections.extend(["## Results aggregated by size", "", by_size, ""])
+    by_tier = _tier_summary_markdown(raw)
+    if by_tier:
+        sections.extend(["## Results by clue-density tier", "", by_tier, ""])
     sections.extend(
         [
-            _markdown_table(summary),
+            "## Visualizations",
             "",
             f"![Success rate by case and solver]({_relative_asset(output, success_chart)})",
             "",
@@ -224,6 +231,81 @@ def _markdown_table(summary: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
+def _size_summary_markdown(table: pd.DataFrame) -> str | None:
+    if "size" not in table or table["size"].dropna().empty:
+        return None
+
+    labels = [
+        "Size", "Solver", "Attempted", "Solved", "Success", "Timeouts",
+        "Median (ms)", "Mean (ms)", "p95 (ms)", "Throughput (puzzles/s)",
+    ]
+    lines = ["| " + " | ".join(labels) + " |", "| " + " | ".join(["---"] * len(labels)) + " |"]
+    for size, size_rows in table.groupby("size", sort=False, dropna=False):
+        tested = _unique_puzzle_count(size_rows)
+        for _, metrics in summary_dataframe(size_rows, tested=tested).iterrows():
+            values = [
+                _display_size(size),
+                str(metrics["solver"]),
+                str(tested),
+                str(int(metrics["solved"])),
+                f"{metrics['success_rate']:.1f}%",
+                str(int(metrics["timeouts"])),
+                _milliseconds(metrics["median_runtime_s"]),
+                _milliseconds(metrics["avg_runtime_s"]),
+                _milliseconds(metrics["p95_runtime_s"]),
+                _number(metrics["throughput_puzzles_s"], decimals=2),
+            ]
+            lines.append("| " + " | ".join(values) + " |")
+    return "\n".join(lines)
+
+
+def _tier_summary_markdown(table: pd.DataFrame) -> str | None:
+    if not {"size", "difficulty"}.issubset(table.columns):
+        return None
+    solvers = list(dict.fromkeys(table["solver"].astype(str)))
+    if not solvers:
+        return None
+
+    headers = ["Size / tier", *solvers]
+    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
+    for (size, difficulty), tier_rows in table.groupby(
+        ["size", "difficulty"], sort=False, dropna=False
+    ):
+        tested = _unique_puzzle_count(tier_rows)
+        summaries = summary_dataframe(tier_rows, tested=tested).set_index("solver")
+        cells = []
+        for solver in solvers:
+            if solver not in summaries.index:
+                cells.append("—")
+                continue
+            metrics = summaries.loc[solver]
+            cells.append(
+                f"{int(metrics['solved'])}/{tested} · "
+                f"{_milliseconds(metrics['median_runtime_s'])} ms · "
+                f"{int(metrics['timeouts'])} TO"
+            )
+        label = f"{_display_size(size)} {difficulty}"
+        lines.append("| " + " | ".join([label, *cells]) + " |")
+    return "\n".join(lines)
+
+
+def _unique_puzzle_count(table: pd.DataFrame) -> int:
+    identity = [column for column in ("case", "difficulty", "puzzle_index") if column in table]
+    if "case" in identity and "difficulty" in identity:
+        identity.remove("difficulty")
+    return len(table[identity].drop_duplicates()) if identity else 0
+
+
+def _display_size(value) -> str:
+    return f"{value}×{value}" if pd.notna(value) else "Unknown size"
+
+
+def _milliseconds(value) -> str:
+    if value is None or pd.isna(value):
+        return "—"
+    return f"{float(value) * 1000:.3f}"
+
+
 def _plot_metric(
     summary: pd.DataFrame,
     metric: str,
@@ -281,11 +363,11 @@ def _safe_stem(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "_", value).strip("_") or "results"
 
 
-def _number(value) -> str:
+def _number(value, decimals=6) -> str:
     if value is None or pd.isna(value):
         return "—"
     try:
-        return f"{float(value):.6g}"
+        return f"{float(value):.{decimals}f}"
     except (TypeError, ValueError):
         return str(value)
 
@@ -304,7 +386,7 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, ValueError) as error:
         parser.error(str(error))
     print(f"Markdown report written to: {report}")
-    print(f"Chart images written to: {report.parent / 'summary_assets'}")
+    print(f"Chart images written to: {report.parent}")
     return 0
 
 

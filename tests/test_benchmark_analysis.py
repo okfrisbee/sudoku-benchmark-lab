@@ -72,8 +72,14 @@ class BenchmarkAnalysisTests(unittest.TestCase):
             self.assertIn("raw_results", content)
             self.assertIn("naive", content)
             self.assertIn("Success rate", content)
-            self.assertEqual(report, run / "summary.md")
-            assets = run / "summary_assets"
+            self.assertEqual(report, run / "reports" / "summary.md")
+            self.assertIn("Results aggregated by size", content)
+            self.assertIn("Results by clue-density tier", content)
+            self.assertIn("Median (ms)", content)
+            self.assertIn("9×9 easy", content)
+            self.assertIn("1/2 · 10.000 ms · 1 TO", content)
+            self.assertIn("2/2 · 25.000 ms · 0 TO", content)
+            assets = run / "reports"
             self.assertTrue((assets / "raw_results_success_rate.png").exists())
             self.assertTrue((assets / "raw_results_median_runtime.png").exists())
 
