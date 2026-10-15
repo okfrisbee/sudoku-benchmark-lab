@@ -20,6 +20,12 @@ an existing case dataset is reused as-is when its count, board size, and clue
 level match the config; metadata marks whether each dataset was generated or
 reused.
 
+New suite runs save one canonical `raw_results.csv` with one row per
+puzzle-solver attempt. The runner prints a case summary after the run, but does
+not save summary CSVs; derive additional summaries from the raw CSV in analysis
+scripts or notebooks. The frozen published run retains its original summary
+CSVs as historical evidence.
+
 `run_01.toml` preserves the exact suite configuration recorded for the
 published run. Its legacy `output_dir` field is retained for historical
 provenance; current suite executions use the timestamped layout described above.

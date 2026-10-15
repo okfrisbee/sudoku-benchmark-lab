@@ -24,7 +24,10 @@ from sudoku_benchmark_lab.board import board_size, parse_board
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
 from sudoku_benchmark_lab.datasets.io import read_dataset
 from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver
-from sudoku_benchmark_lab.benchmark.reporting import summary_dataframe
+from sudoku_benchmark_lab.benchmark.reporting import (
+    print_summary_table,
+    summary_dataframe,
+)
 from sudoku_benchmark_lab.benchmark.runner import (
     benchmark_dataset,
     solve_with_timeout,
@@ -220,14 +223,9 @@ def run_suite(
 
     raw = pd.concat(raw_tables, ignore_index=True)
     by_case = pd.concat(case_summaries, ignore_index=True)
-    by_size = _summary_by_size(raw, suite)
 
     raw_path = destination / "raw_results.csv"
-    case_summary_path = destination / "summary_by_case.csv"
-    size_summary_path = destination / "summary_by_size.csv"
     raw.to_csv(raw_path, index=False)
-    by_case.to_csv(case_summary_path, index=False)
-    by_size.to_csv(size_summary_path, index=False)
 
     finished_at = datetime.now().astimezone()
     metadata = _environment_metadata(
@@ -236,7 +234,7 @@ def run_suite(
         destination=destination,
         dataset_files=dataset_files,
         dataset_sources=dataset_sources,
-        result_files=[raw_path, case_summary_path, size_summary_path, project_config_path],
+        result_files=[raw_path, project_config_path],
         started_at=started_at,
         finished_at=finished_at,
         wall_seconds=time.perf_counter() - wall_start,
@@ -249,28 +247,14 @@ def run_suite(
 
     errors = raw[raw["status"].eq("error")]
     print(f"\nRaw results: {raw_path}")
-    print(f"Case summary: {case_summary_path}")
-    print(f"Size summary: {size_summary_path}")
+    print("\nSummary by case (not saved):")
+    print_summary_table(by_case)
     print(f"Environment metadata: {metadata_path}")
     if not errors.empty:
         raise RuntimeError(
             f"Benchmark completed with {len(errors)} error result(s); inspect {raw_path}."
         )
     return destination
-
-
-def _summary_by_size(raw: pd.DataFrame, suite: dict[str, Any]) -> pd.DataFrame:
-    rows = []
-    size_order = list(dict.fromkeys(case["size"] for case in suite["cases"]))
-    for size in size_order:
-        for solver_name in suite["solvers"]:
-            solver_rows = raw[
-                raw["size"].eq(size) & raw["solver"].eq(solver_name)
-            ]
-            summary = summary_dataframe(solver_rows, tested=len(solver_rows)).iloc[0]
-            row = {"size": size, **summary.to_dict()}
-            rows.append(row)
-    return pd.DataFrame(rows)
 
 
 def _environment_metadata(
