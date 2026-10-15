@@ -15,7 +15,7 @@ This is a Sudoku-specific Python package for generating puzzle datasets, compari
 | `benchmark/suite.py` | Run a configured case matrix with seeded datasets, warm-up, result files, and environment metadata. |
 | `cli.py` | Interactive input, menus, progress output, and graph choices. |
 
-The dependency direction is board and result contracts → solvers and datasets → benchmark → CLI. `benchmark/runner.py` and dataset modules never prompt. The research suite calls the same runner as the interactive benchmark. The root `main.py`, `benchmark/runner.py`, and `data/research_benchmark/suite.py` retain existing command paths as small entry-point wrappers.
+The dependency direction is board and result contracts → solvers and datasets → benchmark → CLI. The runner and dataset modules never prompt. The research suite calls the same runner as the interactive benchmark. The root `main.py` and `data/research_benchmark/suite.py` retain their command paths as small entry-point wrappers.
 
 ## Solver and data contracts
 

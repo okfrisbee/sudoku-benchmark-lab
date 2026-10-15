@@ -217,10 +217,11 @@ records, while new datasets omit the fields.
 
 ## Run your own comparison
 
-To choose a generated dataset and compare one or all solvers:
+To choose a generated dataset and compare one or all solvers, start the
+interactive menu and select **Benchmark**:
 
 ```bash
-.venv/bin/python -m benchmark.runner
+.venv/bin/sudoku-lab
 ```
 
 To repeat the published benchmark, use a new or empty output directory:
