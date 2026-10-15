@@ -32,7 +32,9 @@ are not ratings of human puzzle difficulty.
 | 36×36 | Across all six solvers: high-clue 24/24, mid-clue 4/18, and low-clue 0/18 (18 timeouts). |
 <!-- BENCHMARK_HIGHLIGHTS_END -->
 
-The published result tables retain the historical name “Naive.” The current solver name is **Naive iterative**; the suite runner still accepts `naive` in older configs.\n\nThe table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
+The published result tables retain the historical name “Naive.” The current solver name is **Naive iterative**; the suite runner still accepts `naive` in older configs.
+
+The table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
 calibration work, fixed test settings, timing rules, test machine, complete
 per-tier tables, and limitations. Suite configs and results are under
 [experiments](experiments/README.md); puzzle datasets and ad hoc benchmark
