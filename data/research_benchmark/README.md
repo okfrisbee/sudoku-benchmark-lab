@@ -4,8 +4,8 @@ This directory is the self-contained research bundle for the benchmark
 highlighted in the repository [`README.md`](../../README.md) and documented in
 detail in [`BENCHMARK.md`](../../BENCHMARK.md).
 
-- [`suite.py`](suite.py) runs the deterministic benchmark and writes its
-  evidence files.
+- [`suite.py`](suite.py) retains the documented command for the benchmark suite
+  implemented in `sudoku_benchmark_lab.benchmark.suite`.
 - [`verify_readme.py`](verify_readme.py) derives the root README highlights and
   compact results from the summary CSVs, then checks that the detailed
   `BENCHMARK.md` tables are copied exactly from the saved generated table.

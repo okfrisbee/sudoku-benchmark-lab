@@ -6,8 +6,8 @@ Project datasets and benchmark outputs live here:
   generator API.
 - `results/data/` and `results/summary/` contain ad hoc benchmark CSV output.
 - [`research_benchmark/`](research_benchmark/) is the curated study behind the
-  repository documentation. It groups the calibration evidence, executable suite,
-  verifier, frozen benchmark configuration, selected datasets, and final
+  repository documentation. It groups the calibration evidence, suite command,
+  published-table checker, frozen benchmark configuration, selected datasets, and final
   results.
 
 The complete `data/` tree is eligible for version control. Review newly
