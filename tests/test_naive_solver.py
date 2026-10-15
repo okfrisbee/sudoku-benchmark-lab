@@ -1,6 +1,6 @@
 import unittest
 
-from sudoku_benchmark_lab.solvers.naive import solve_naive
+from sudoku_benchmark_lab.solvers.naive_iterative import solve_naive_iterative
 from sudoku_benchmark_lab.solvers.naive_recursive import solve_naive_recursive
 
 
@@ -16,9 +16,13 @@ def pattern_solution(size: int) -> list[int]:
     ]
 
 
-class NaiveSolverTests(unittest.TestCase):
+class NaiveIterativeSolverTests(unittest.TestCase):
+    def test_legacy_function_name_remains_available(self):
+        from sudoku_benchmark_lab.solvers.naive_iterative import solve_naive
+        self.assertIs(solve_naive, solve_naive_iterative)
+
     def test_solves_4x4_puzzle(self):
-        result = solve_naive("1 0 3 0 0 4 0 2 2 0 4 0 0 3 0 1")
+        result = solve_naive_iterative("1 0 3 0 0 4 0 2 2 0 4 0 0 3 0 1")
 
         self.assertTrue(result.solved)
         self.assertEqual(result.solution, SOLVED_4X4)
@@ -28,13 +32,13 @@ class NaiveSolverTests(unittest.TestCase):
         puzzle = solved.copy()
         puzzle[0] = 0
 
-        result = solve_naive(puzzle)
+        result = solve_naive_iterative(puzzle)
 
         self.assertTrue(result.solved)
         self.assertEqual(result.solution, " ".join(map(str, solved)))
 
     def test_rejects_non_square_box_size(self):
-        result = solve_naive([0] * 36)
+        result = solve_naive_iterative([0] * 36)
 
         self.assertEqual(result.status, "failed")
         self.assertIn("perfect square", result.error)
@@ -43,7 +47,7 @@ class NaiveSolverTests(unittest.TestCase):
         puzzle = pattern_solution(16)
         puzzle[1] = puzzle[0]
 
-        result = solve_naive(puzzle)
+        result = solve_naive_iterative(puzzle)
 
         self.assertEqual(result.status, "failed")
         self.assertEqual(result.error, "Invalid board state.")

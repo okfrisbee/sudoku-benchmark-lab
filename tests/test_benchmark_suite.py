@@ -147,6 +147,15 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
         self.assertEqual(suite["cases"][0]["count"], 2)
         self.assertEqual(suite["cases"][0]["timeout_seconds"], 0.5)
 
+    def test_legacy_naive_name_resolves_to_canonical_solver(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "suite.toml"
+            write_suite_config(path, solvers='["naive"]')
+
+            suite = load_suite_config(path)
+
+        self.assertEqual(suite["solvers"], ["naive_iterative"])
+
     def test_rejects_unknown_solver(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "suite.toml"
