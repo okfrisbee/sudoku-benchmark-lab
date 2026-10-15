@@ -69,6 +69,22 @@ a dataset, or run a comparison. On Windows, replace
   in the terminal and can be regenerated from the raw results.
 - **Plot comparisons.** View per-puzzle times and average-time bar charts after
   an interactive benchmark.
+- **Generate a saved report.** Build a Markdown summary and charts from normal
+  benchmark and suite result CSVs with the reusable report script.
+
+After benchmarking, choose **Summarize Results** to print a table for one saved
+CSV. This also works for suite runs and keeps suite cases separate. Normal
+benchmark CSVs are stored as `results/<dataset>/<timestamp>/raw_results.csv`;
+suite CSVs are stored in their timestamped experiment run folder.
+
+Generate a Markdown report from one result CSV with:
+
+```bash
+.venv/bin/python scripts/generate_report.py path/to/raw_results.csv
+```
+
+The script writes `summary.md` and chart images alongside the selected CSV.
+Use `--output PATH` to select a different Markdown file path.
 
 ## Six approaches to the same puzzle
 
@@ -208,7 +224,7 @@ print(path)
 ```
 
 New datasets go to `datasets/`. Interactive benchmark result CSVs go to
-`results/`. Suite-generated datasets are stored under
+`results/<dataset>/<timestamp>/raw_results.csv`. Suite-generated datasets are stored under
 `datasets/suites/<config-name>/`; suite results go under
 `experiments/results/<config-name>/<timestamp>/`.
 

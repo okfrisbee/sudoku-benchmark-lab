@@ -22,9 +22,10 @@ reused.
 
 New suite runs save one canonical `raw_results.csv` with one row per
 puzzle-solver attempt. The runner prints a case summary after the run, but does
-not save summary CSVs; derive additional summaries from the raw CSV in analysis
-scripts or notebooks. The frozen published run retains its original summary
-CSVs as historical evidence.
+not save summary CSVs; use the **Summarize Results** menu to print a table for
+one selected CSV. Run `python scripts/generate_report.py PATH/TO/raw_results.csv`
+to write `summary.md` and chart assets alongside the selected CSV. The frozen
+published run retains its original summary CSVs as historical evidence.
 
 `run_01.toml` preserves the exact suite configuration recorded for the
 published run. Its legacy `output_dir` field is retained for historical

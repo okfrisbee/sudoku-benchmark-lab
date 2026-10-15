@@ -1,5 +1,7 @@
 from pathlib import Path
+from contextlib import redirect_stdout
 import hashlib
+import io
 import json
 import tempfile
 import unittest
@@ -48,7 +50,11 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             destination = Path(root) / "output"
             datasets = Path(root) / "datasets" / "suite"
             write_suite_config(config, solvers='["naive"]')
-            run_suite(config, destination, datasets)
+            output = io.StringIO()
+            with redirect_stdout(output):
+                run_suite(config, destination, datasets)
+            self.assertIn("Summary by case (not saved)", output.getvalue())
+            self.assertIn("4x4_easy", output.getvalue())
             self.assertEqual(len((destination / "raw_results.csv").read_text().splitlines()), 3)
             self.assertEqual(
                 [path.name for path in destination.glob("*.csv")],
@@ -56,6 +62,8 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             )
             self.assertFalse((destination / "readme_tables.md").exists())
             self.assertTrue((destination / "metadata.json").exists())
+            self.assertTrue((destination / "project_config.json").exists())
+            self.assertFalse((destination / "project_config.toml").exists())
             self.assertTrue((datasets / "4x4_easy.jsonl").exists())
             metadata = json.loads(
                 (destination / "metadata.json").read_text(encoding="utf-8")

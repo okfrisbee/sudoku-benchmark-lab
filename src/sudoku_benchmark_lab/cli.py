@@ -6,6 +6,11 @@ from sudoku_benchmark_lab.board import print_board, validate_size
 from sudoku_benchmark_lab.benchmark.reporting import (
     print_summary_table, result_path, summary_dataframe, write_csv,
 )
+from sudoku_benchmark_lab.benchmark.analysis import (
+    PROJECT_ROOT,
+    discover_result_csvs,
+    summarize_result_csv,
+)
 from sudoku_benchmark_lab.benchmark.runner import benchmark_dataset, solve_with_timeout
 from sudoku_benchmark_lab.benchmark.suite import list_suite_configs, run_suite
 from sudoku_benchmark_lab.benchmark.visualization import visualization_data, visualize_benchmark
@@ -102,12 +107,35 @@ def run_suite_menu():
     print(f"\nSuite results written to: {output}")
 
 
+def summarize_results_menu():
+    result_files = discover_result_csvs()
+    if not result_files:
+        print("\nNo benchmark result CSVs found in results/ or experiments/results/.")
+        return
+    options = [
+        str(path.relative_to(PROJECT_ROOT)) if path.is_relative_to(PROJECT_ROOT) else str(path)
+        for path in result_files
+    ]
+    selected = prompt_choice("\nAvailable benchmark result CSVs:", options)
+    if selected is None:
+        print("Invalid result CSV.")
+        return
+    path = result_files[options.index(selected)]
+    try:
+        summary = summarize_result_csv(path)
+    except (OSError, ValueError) as error:
+        print(f"Could not summarize results: {error}")
+        return
+    print(f"\nSummary for: {path}")
+    print_summary_table(summary)
+
+
 def main():
     while True:
         print(
             "\n-----Sudoku Menu-----\n"
             "1. Enter Puzzle\n2. Generate Dataset\n3. Benchmark\n"
-            "4. Run Suite\n5. Quit"
+            "4. Run Suite\n5. Summarize Results\n6. Quit"
         )
         choice = input().strip()
         if choice == "1":
@@ -132,6 +160,8 @@ def main():
         elif choice == "4":
             run_suite_menu()
         elif choice == "5":
+            summarize_results_menu()
+        elif choice == "6":
             return
         else:
             print("Invalid choice.")

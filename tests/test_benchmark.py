@@ -88,7 +88,9 @@ class BenchmarkTests(unittest.TestCase):
                 csv_path = result_path(path)
                 write_csv(table, csv_path)
                 self.assertTrue(csv_path.exists())
-                self.assertEqual(csv_path.parent, Path(root) / "results")
+                self.assertEqual(csv_path.parent.parent, Path(root) / "results" / "4x4_easy_1")
+                self.assertEqual(csv_path.name, "raw_results.csv")
+                self.assertEqual(len(list(csv_path.parent.parent.iterdir())), 1)
                 self.assertIn("solver_solution", table.columns)
                 self.assertTrue(table.loc[0, "solver_solution"])
                 self.assertFalse((Path(root) / "results" / "summary").exists())
@@ -96,7 +98,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(table["status"].tolist(), ["solved"])
         self.assertEqual(table["size"].tolist(), [4])
         self.assertEqual(summary["solved"], 1)
-        self.assertEqual(csv_path.name, "4x4_easy_1_results.csv")
 
 
 if __name__ == "__main__":

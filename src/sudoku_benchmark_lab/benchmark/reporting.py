@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 
@@ -28,8 +29,10 @@ CSV_FIELDS = [
 def result_path(dataset_path):
     root = Path(load_config()["paths"]["benchmark_results_dir"])
     dataset_stem = Path(dataset_path).stem
-    root.mkdir(parents=True, exist_ok=True)
-    return root / f"{dataset_stem}_results.csv"
+    run_root = root / dataset_stem
+    run_root.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S_%f")
+    return run_root / timestamp / "raw_results.csv"
 
 
 def _result_row(puzzle_index, solver_name, result, metadata=None):
