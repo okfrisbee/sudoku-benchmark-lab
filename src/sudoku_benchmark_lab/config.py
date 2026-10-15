@@ -6,7 +6,7 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_ROOT = (
+DEFAULT_ROOT = (
     PROJECT_ROOT
     if (PROJECT_ROOT / "pyproject.toml").exists()
     else Path.cwd()
@@ -16,8 +16,8 @@ DATA_ROOT = (
 # runs use the same defaults without depending on a working-directory file.
 DEFAULT_CONFIG: dict[str, Any] = {
     "paths": {
-        "datasets_dir": str(DATA_ROOT / "data" / "datasets"),
-        "benchmark_results_dir": str(DATA_ROOT / "data" / "results"),
+        "datasets_dir": str(DEFAULT_ROOT / "datasets"),
+        "benchmark_results_dir": str(DEFAULT_ROOT / "results"),
     },
     "generation": {
         "clue_percent_ranges": {

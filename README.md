@@ -34,8 +34,9 @@ are not ratings of human puzzle difficulty.
 
 The table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
 calibration work, fixed test settings, timing rules, test machine, complete
-per-tier tables, and limitations. All saved data is under
-[experiments](experiments/README.md), with suite datasets under `data/datasets/`.
+per-tier tables, and limitations. Suite configs and results are under
+[experiments](experiments/README.md); puzzle datasets and ad hoc benchmark
+results are under `datasets/` and `results/`.
 
 ## Quick start
 
@@ -64,8 +65,8 @@ a dataset, or run a comparison. On Windows, replace
   a solver attempt as successful.
 - **Compare solvers fairly.** Give every solver the same puzzles and time limit,
   and stop slow attempts safely in their own process.
-- **Save useful results.** Write one CSV row per attempt plus summaries for
-  success, timeouts, typical runtime, slow-tail runtime, and throughput.
+- **Save useful results.** Write one CSV row per attempt; summaries are shown
+  in the terminal and can be regenerated from the raw results.
 - **Plot comparisons.** View per-puzzle times and average-time bar charts after
   an interactive benchmark.
 
@@ -206,9 +207,9 @@ path = generate_dataset(size=9, difficulty="mixed", count=100, seed=123)
 print(path)
 ```
 
-New datasets go to `data/datasets/`. Interactive benchmark results go to
-`data/results/`. Suite-generated datasets are stored under
-`data/datasets/suites/<config-name>/`; suite results go under
+New datasets go to `datasets/`. Interactive benchmark result CSVs go to
+`results/`. Suite-generated datasets are stored under
+`datasets/suites/<config-name>/`; suite results go under
 `experiments/results/<config-name>/<timestamp>/`.
 
 Puzzle generation starts from a completed board and removes clues. It does not
@@ -228,7 +229,7 @@ interactive menu and select **Benchmark**:
 To run a configured benchmark suite, start the menu and select **Run Suite**.
 Every TOML file under `experiments/configs/` is listed. Each run gets its own
 timestamped results folder, while seeded datasets are kept in
-`data/datasets/suites/<config-name>/`.
+`datasets/suites/<config-name>/`.
 
 ```bash
 .venv/bin/sudoku-lab

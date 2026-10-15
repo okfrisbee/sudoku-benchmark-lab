@@ -4,7 +4,7 @@ import time
 import unittest
 
 from sudoku_benchmark_lab.benchmark.reporting import (
-    result_paths, results_dataframe, summary_dataframe, write_csv,
+    result_path, results_dataframe, summary_dataframe, write_csv,
 )
 from sudoku_benchmark_lab.benchmark.runner import (
     benchmark_dataset, solve_with_timeout, validate_solver_result,
@@ -85,19 +85,18 @@ class BenchmarkTests(unittest.TestCase):
                     benchmark_dataset(path, size=9, solver_names=["naive"])
                 table = benchmark_dataset(path, 4, solver_names=["naive"])
                 summary = summary_dataframe(table).iloc[0]
-                csv_path, summary_path = result_paths(path)
+                csv_path = result_path(path)
                 write_csv(table, csv_path)
-                write_csv(summary_dataframe(table), summary_path)
                 self.assertTrue(csv_path.exists())
-                self.assertTrue(summary_path.exists())
+                self.assertEqual(csv_path.parent, Path(root) / "results")
                 self.assertIn("solver_solution", table.columns)
                 self.assertTrue(table.loc[0, "solver_solution"])
+                self.assertFalse((Path(root) / "results" / "summary").exists())
 
         self.assertEqual(table["status"].tolist(), ["solved"])
         self.assertEqual(table["size"].tolist(), [4])
         self.assertEqual(summary["solved"], 1)
         self.assertEqual(csv_path.name, "4x4_easy_1_results.csv")
-        self.assertEqual(summary_path.name, "4x4_easy_1_summary.csv")
 
 
 if __name__ == "__main__":

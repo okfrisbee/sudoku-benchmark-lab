@@ -194,7 +194,7 @@ Install the project as shown in the [quick start](README.md#quick-start), then
 choose **Run Suite** from the interactive menu. The menu lists TOML files in
 [`experiments/configs/`](experiments/configs/). Every execution creates a new
 timestamped results folder under `experiments/results/<config-name>/` and
-stores the seeded case datasets under `data/datasets/suites/<config-name>/`.
+stores the seeded case datasets under `datasets/suites/<config-name>/`.
 
 ```bash
 .venv/bin/sudoku-lab
@@ -216,7 +216,7 @@ configuration and dataset hashes for reproducibility.
   frozen source for the detailed tables above. New suite runs do not generate
   README-specific Markdown files.
 - [`run_01.toml`](experiments/configs/run_01.toml) is the exact suite configuration.
-- [`run_01 datasets`](data/datasets/suites/run_01/) contains the exact puzzles used.
+- [`run_01 datasets`](datasets/suites/run_01/) contains the exact puzzles used.
 - [`metadata.json`](experiments/results/run_01/2026-09-04_00-44-48/metadata.json) records the
   machine, method, and SHA-256 file hashes.
 

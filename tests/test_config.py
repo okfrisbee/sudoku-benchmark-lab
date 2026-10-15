@@ -10,6 +10,8 @@ class ConfigTests(unittest.TestCase):
         config = load_config()
         self.assertEqual(config["generation"]["clue_percent_ranges"]["easy"], (0.75, 0.85))
         self.assertEqual(config["benchmark"]["solver_timeout_seconds"], 60.0)
+        self.assertEqual(Path(config["paths"]["datasets_dir"]).name, "datasets")
+        self.assertEqual(Path(config["paths"]["benchmark_results_dir"]).name, "results")
         config["paths"]["datasets_dir"] = "changed"
         self.assertNotEqual(DEFAULT_CONFIG["paths"]["datasets_dir"], "changed")
 

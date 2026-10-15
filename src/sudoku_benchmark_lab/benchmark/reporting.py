@@ -25,17 +25,11 @@ CSV_FIELDS = [
     "solution_found",
     "error",
 ]
-def result_paths(dataset_path):
+def result_path(dataset_path):
     root = Path(load_config()["paths"]["benchmark_results_dir"])
     dataset_stem = Path(dataset_path).stem
-    data_dir = root / "data"
-    summary_dir = root / "summary"
-    data_dir.mkdir(parents=True, exist_ok=True)
-    summary_dir.mkdir(parents=True, exist_ok=True)
-
-    csv_path = data_dir / f"{dataset_stem}_results.csv"
-    summary_path = summary_dir / f"{dataset_stem}_summary.csv"
-    return csv_path, summary_path
+    root.mkdir(parents=True, exist_ok=True)
+    return root / f"{dataset_stem}_results.csv"
 
 
 def _result_row(puzzle_index, solver_name, result, metadata=None):

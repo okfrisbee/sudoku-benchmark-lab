@@ -4,7 +4,7 @@ import time
 
 from sudoku_benchmark_lab.board import print_board, validate_size
 from sudoku_benchmark_lab.benchmark.reporting import (
-    print_summary_table, result_paths, summary_dataframe, write_csv,
+    print_summary_table, result_path, summary_dataframe, write_csv,
 )
 from sudoku_benchmark_lab.benchmark.runner import benchmark_dataset, solve_with_timeout
 from sudoku_benchmark_lab.benchmark.suite import list_suite_configs, run_suite
@@ -70,16 +70,15 @@ def benchmark_menu():
     if choice is None:
         print("Invalid benchmark solver mode.")
         return None
-    save = input("Save benchmark results and summary to CSV? (y/n): ").strip().lower() == "y"
+    save = input("Save raw benchmark results to CSV? (y/n): ").strip().lower() == "y"
     table = benchmark_dataset(dataset, solver_names=None if choice == "all" else [choice], progress=print)
     summary = summary_dataframe(table)
     print(f"\n-----Results-----\nPuzzles Tested: {table['puzzle_index'].nunique()}\n")
     print_summary_table(summary)
     if save:
-        raw_path, summary_path = result_paths(dataset)
-        write_csv(table, raw_path)
-        write_csv(summary, summary_path)
-        print(f"\nCSV written to: {raw_path}\nSummary CSV written to: {summary_path}")
+        csv_path = result_path(dataset)
+        write_csv(table, csv_path)
+        print(f"\nCSV written to: {csv_path}")
     return table
 
 

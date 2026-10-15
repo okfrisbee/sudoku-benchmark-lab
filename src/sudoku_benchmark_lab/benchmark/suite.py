@@ -37,7 +37,7 @@ from sudoku_benchmark_lab.benchmark.runner import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONFIGS_DIR = PROJECT_ROOT / "experiments/configs"
-SUITE_DATASETS_DIR = PROJECT_ROOT / "data/datasets/suites"
+SUITE_DATASETS_DIR = PROJECT_ROOT / "datasets/suites"
 RESULTS_DIR = PROJECT_ROOT / "experiments/results"
 DEFAULT_CONFIG_PATH = CONFIGS_DIR / "run_01.toml"
 SOURCE_FILES = [

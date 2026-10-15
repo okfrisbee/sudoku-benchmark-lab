@@ -9,7 +9,7 @@ code and input datasets.
   timestamped subfolder for each execution.
 - [`results/run_01/2026-09-04_00-44-48/`](results/run_01/2026-09-04_00-44-48/)
   holds the frozen published study. Its exact generated inputs remain in
-  [`data/datasets/suites/run_01/`](../data/datasets/suites/run_01/).
+  [`datasets/suites/run_01/`](../datasets/suites/run_01/).
 - [`results/calibration/`](results/calibration/) preserves the pilot
   measurements that informed the published suite.
 
