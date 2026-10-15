@@ -167,10 +167,6 @@ def run_suite(
         raise FileExistsError(f"Refusing to overwrite non-empty benchmark directory: {destination}")
     destination.mkdir(parents=True, exist_ok=True)
 
-    project_config_path = destination / "project_config.json"
-    project_config_text = json.dumps(load_config(), indent=2, sort_keys=True) + "\n"
-    project_config_path.write_text(project_config_text, encoding="utf-8")
-
     started_at = datetime.now().astimezone()
     wall_start = time.perf_counter()
     raw_tables = []
@@ -234,7 +230,7 @@ def run_suite(
         destination=destination,
         dataset_files=dataset_files,
         dataset_sources=dataset_sources,
-        result_files=[raw_path, project_config_path],
+        result_files=[raw_path],
         started_at=started_at,
         finished_at=finished_at,
         wall_seconds=time.perf_counter() - wall_start,
@@ -320,9 +316,6 @@ def _environment_metadata(
         if config_path.resolve().is_relative_to(PROJECT_ROOT)
         else str(config_path.resolve()),
         "suite_config_sha256": _sha256(config_path),
-        "project_config_sha256": hashlib.sha256(
-            json.dumps(load_config(), sort_keys=True).encode("utf-8")
-        ).hexdigest(),
         "source_file_sha256": {
             str(path): _sha256(PROJECT_ROOT / path)
             for path in SOURCE_FILES if (PROJECT_ROOT / path).exists()

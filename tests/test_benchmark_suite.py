@@ -62,7 +62,7 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             )
             self.assertFalse((destination / "readme_tables.md").exists())
             self.assertTrue((destination / "metadata.json").exists())
-            self.assertTrue((destination / "project_config.json").exists())
+            self.assertFalse((destination / "project_config.json").exists())
             self.assertFalse((destination / "project_config.toml").exists())
             self.assertTrue((datasets / "4x4_easy.jsonl").exists())
             metadata = json.loads(
@@ -75,8 +75,9 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             self.assertNotIn("readme_tables.md", metadata["artifact_sha256"])
             self.assertEqual(
                 set(metadata["artifact_sha256"]),
-                {"raw_results.csv", "project_config.json"},
+                {"raw_results.csv"},
             )
+            self.assertNotIn("project_config_sha256", metadata)
             self.assertEqual(metadata["dataset_files"][0]["path"], str((datasets / "4x4_easy.jsonl").resolve()))
             with self.assertRaises(FileExistsError):
                 run_suite(config, destination, datasets)
