@@ -49,7 +49,7 @@ SOURCE_FILES = [
         "benchmark/reporting.py", "benchmark/runner.py", "benchmark/suite.py",
         "board.py", "config.py", "validation.py", "datasets/generation.py", "datasets/io.py",
         "solvers/registry.py", "solvers/result.py", "solvers/csp.py",
-        "solvers/dlx.py", "solvers/naive.py", "solvers/naive_recursive.py",
+        "solvers/dlx.py", "solvers/naive_iterative.py", "solvers/naive_recursive.py",
         "solvers/sat.py", "solvers/smt.py",
     )
 ]

@@ -9,7 +9,7 @@ from .reporting import (
     results_dataframe,
 )
 
-from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver
+from sudoku_benchmark_lab.solvers.registry import SOLVERS, canonical_solver_name, get_solver
 from sudoku_benchmark_lab.solvers.result import SolverResult
 from sudoku_benchmark_lab.validation import validate_solution
 
@@ -121,7 +121,9 @@ def benchmark_dataset(
     if not records:
         raise ValueError("Dataset has no puzzles")
 
-    names = list(SOLVERS) if solver_names is None else list(solver_names)
+    names = list(SOLVERS) if solver_names is None else [
+        canonical_solver_name(name) for name in solver_names
+    ]
     if not names or len(set(names)) != len(names):
         raise ValueError("Select at least one distinct solver")
     unknown = set(names) - SOLVERS.keys()
