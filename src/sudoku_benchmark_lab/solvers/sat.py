@@ -4,8 +4,8 @@ from pysat.card import CardEnc, EncType
 from pysat.formula import CNF, IDPool
 from pysat.solvers import Solver
 
-from board_utils import board_size, format_board, parse_board
-from solvers.metrics import SolverResult
+from sudoku_benchmark_lab.board import board_size, format_board, parse_board
+from sudoku_benchmark_lab.solvers.result import SolverResult
 
 
 DEFAULT_SOLVER = "cadical153"

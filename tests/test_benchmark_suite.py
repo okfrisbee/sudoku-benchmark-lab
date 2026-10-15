@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from data.research_benchmark.suite import load_suite_config
+from sudoku_benchmark_lab.benchmark.suite import load_suite_config, run_suite
 
 
 def write_suite_config(path: Path, *, solvers='["csp"]', duplicate=False) -> None:
@@ -34,6 +34,17 @@ def write_suite_config(path: Path, *, solvers='["csp"]', duplicate=False) -> Non
 
 
 class BenchmarkSuiteConfigTests(unittest.TestCase):
+    def test_small_suite_writes_artifacts_and_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as root:
+            config = Path(root) / "suite.toml"
+            destination = Path(root) / "output"
+            write_suite_config(config, solvers='["naive"]')
+            run_suite(config, destination)
+            self.assertEqual(len((destination / "raw_results.csv").read_text().splitlines()), 3)
+            self.assertTrue((destination / "metadata.json").exists())
+            with self.assertRaises(FileExistsError):
+                run_suite(config, destination)
+
     def test_loads_valid_case_matrix(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "suite.toml"

@@ -3,15 +3,22 @@ from typing import Any
 import tomllib
 
 
-CONFIG_PATH = Path("config.toml")
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CONFIG_PATH = PROJECT_ROOT / "config.toml"
+
+
+def config_path(path: str | Path | None = None) -> Path:
+    if path is not None:
+        return Path(path).resolve()
+    return CONFIG_PATH if CONFIG_PATH.exists() else Path(__file__).with_name("default_config.toml")
 
 
 def load_config(path: str | Path | None = None) -> dict[str, Any]:
-    config_path = Path(CONFIG_PATH if path is None else path)
-    if not config_path.exists():
-        raise FileNotFoundError(f"Required config file not found: {config_path}")
+    source = config_path(path)
+    if not source.exists():
+        raise FileNotFoundError(f"Required config file not found: {source}")
 
-    with open(config_path, "rb") as config_file:
+    with source.open("rb") as config_file:
         config = tomllib.load(config_file)
 
     paths = _table(config, "paths")
@@ -20,8 +27,8 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
 
     return {
         "paths": {
-            "datasets_dir": _non_empty_string(paths, "datasets_dir"),
-            "benchmark_results_dir": _non_empty_string(paths, "benchmark_results_dir"),
+            "datasets_dir": str(_resolve_path(source, _non_empty_string(paths, "datasets_dir"))),
+            "benchmark_results_dir": str(_resolve_path(source, _non_empty_string(paths, "benchmark_results_dir"))),
         },
         "generation": {
             "clue_percent_ranges": _clue_ranges(
@@ -35,6 +42,11 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
             ),
         },
     }
+
+
+def _resolve_path(source: Path, value: str) -> Path:
+    candidate = Path(value)
+    return candidate if candidate.is_absolute() else source.parent / candidate
 
 
 def _table(config: dict[str, Any], key: str) -> dict[str, Any]:

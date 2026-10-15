@@ -1,19 +1,18 @@
 from dataclasses import dataclass
-import json
 from pathlib import Path
 import random
 import re
-import time
 
-from board_utils import format_board, parse_board, validate_size
-import cli_helpers
-from cli_helpers import prompt_positive_int, prompt_size
-from config import load_config
-from .verification import VerificationResult, verify_puzzle
+from sudoku_benchmark_lab.board import format_board, parse_board, validate_size
+from sudoku_benchmark_lab.config import load_config
 
-DATASETS_DIR = load_config()["paths"]["datasets_dir"]
-DIFFICULTY_PERCENT_RANGES = load_config()["generation"]["clue_percent_ranges"]
-DIFFICULTIES = tuple(DIFFICULTY_PERCENT_RANGES) + ("mixed",)
+
+def clue_ranges() -> dict[str, tuple[float, float]]:
+    return load_config()["generation"]["clue_percent_ranges"]
+
+
+def difficulties() -> tuple[str, ...]:
+    return (*clue_ranges(), "mixed")
 
 
 @dataclass
@@ -24,7 +23,6 @@ class GeneratedPuzzle:
     box_size: int
     target_clues: int
     actual_clues: int
-    verification: VerificationResult
 
 
 def generate_pattern_solution(size: int = 9, seed: int | None = None) -> str:
@@ -57,7 +55,6 @@ def generate_puzzle(
     size: int = 9,
     clues: int | None = None,
     seed: int | None = None,
-    verify: bool = False,
 ) -> GeneratedPuzzle:
     n, box = validate_size(size)
 
@@ -74,17 +71,6 @@ def generate_puzzle(
     for index in indexes[: n * n - clues]:
         puzzle_values[index] = 0
 
-    if verify:
-        verification = verify_puzzle(puzzle_values, mode="solvable")
-    else:
-        verification = VerificationResult(
-            valid=True,
-            mode="derived",
-            solution=solution,
-            solution_count=None,
-            runtime_seconds=0.0,
-        )
-
     return GeneratedPuzzle(
         puzzle=format_board(puzzle_values),
         solution=solution,
@@ -92,12 +78,11 @@ def generate_puzzle(
         box_size=box,
         target_clues=clues,
         actual_clues=sum(1 for value in puzzle_values if value != 0),
-        verification=verification,
     )
 
 
 def random_clue_percent(difficulty: str, rng: random.Random) -> float:
-    ranges = DIFFICULTY_PERCENT_RANGES
+    ranges = clue_ranges()
     if difficulty not in ranges:
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     low, high = ranges[difficulty]
@@ -110,8 +95,8 @@ def clue_count(size: int, difficulty: str, rng: random.Random) -> tuple[int, flo
 
 
 def expand_difficulties(difficulty: str, count: int) -> list[str]:
-    ranges = DIFFICULTY_PERCENT_RANGES
-    if difficulty not in DIFFICULTIES:
+    ranges = clue_ranges()
+    if difficulty not in difficulties():
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     if count <= 0:
         raise ValueError("Count must be positive")
@@ -132,7 +117,7 @@ def dataset_path(
     count: int,
 ) -> Path:
     validate_size(size)
-    if difficulty not in DIFFICULTIES:
+    if difficulty not in difficulties():
         raise ValueError(f"Unsupported difficulty: {difficulty}")
     if count < 0:
         raise ValueError("Count cannot be negative")
@@ -149,32 +134,11 @@ def dataset_size_from_path(path: str | Path) -> int:
     return int(match.group(1))
 
 
-def write_dataset_records(
-    records,
-    size: int,
-    difficulty: str,
-) -> Path:
-    validate_size(size)
-    directory = Path(load_config()["paths"]["datasets_dir"])
-    directory.mkdir(parents=True, exist_ok=True)
-    if difficulty not in DIFFICULTIES:
-        raise ValueError(f"Unsupported difficulty: {difficulty}")
-    path = dataset_path(size, difficulty, len(records))
-
-    with open(path, "w", encoding="utf-8") as f:
-        for record in records:
-            f.write(json.dumps(record, sort_keys=True))
-            f.write("\n")
-
-    return path
-
-
 def generate_dataset_records(
     size: int,
     difficulty: str,
     count: int,
     seed: int | None = None,
-    verify: bool = False,
 ):
     validate_size(size)
     rng = random.Random(seed)
@@ -190,15 +154,7 @@ def generate_dataset_records(
             size=size,
             clues=target_clues,
             seed=puzzle_seed,
-            verify=verify,
         )
-        if not generated.verification.valid:
-            raise RuntimeError(
-                f"Generated puzzle {index} failed verification: "
-                f"{generated.verification.error}"
-            )
-        verification_mode = generated.verification.mode
-        unique = False
 
         records.append(
             {
@@ -211,8 +167,6 @@ def generate_dataset_records(
                 "puzzle": generated.puzzle,
                 "solution": generated.solution,
                 "seed": puzzle_seed,
-                "verification_mode": verification_mode,
-                "unique": unique,
             }
         )
 
@@ -225,30 +179,7 @@ def generate_dataset(
     count: int,
     seed: int | None = None,
 ) -> Path:
-    records = generate_dataset_records(size, difficulty, count, seed=seed, verify=False)
+    from .io import write_dataset_records
+
+    records = generate_dataset_records(size, difficulty, count, seed=seed)
     return write_dataset_records(records, size, difficulty)
-
-
-def generate_dataset_menu():
-    size = prompt_size()
-    if size is None:
-        return
-
-    difficulty = cli_helpers.prompt_difficulty(DIFFICULTIES)
-    if difficulty is None:
-        return
-
-    count = prompt_positive_int("\nHow many puzzles should be generated?")
-    if count is None:
-        return
-
-    print(f"\nGenerating {count} {size}x{size} {difficulty} puzzle(s)...")
-    start = time.perf_counter()
-    try:
-        path = generate_dataset(size, difficulty, count)
-    except Exception as exc:
-        print(f"Dataset generation failed: {exc}")
-        return
-
-    print(f"Dataset written to: {path}")
-    print(f"Generation time: {time.perf_counter() - start:.4f}s")

@@ -1,7 +1,7 @@
 import time
 
-import board_utils
-from solvers.metrics import SolverResult
+from sudoku_benchmark_lab import board as board_utils
+from sudoku_benchmark_lab.solvers.result import SolverResult
 
 
 class CSPSolver:

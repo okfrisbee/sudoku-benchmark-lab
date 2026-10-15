@@ -57,5 +57,5 @@ def temporary_config(
         solver_timeout_seconds=solver_timeout_seconds,
         clue_percent_ranges=clue_percent_ranges,
     )
-    with patch("config.CONFIG_PATH", config_path):
+    with patch("sudoku_benchmark_lab.config.CONFIG_PATH", config_path):
         yield config_path

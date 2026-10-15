@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from config import load_config
+from sudoku_benchmark_lab.config import load_config
 from tests.config_helpers import write_config
 
 

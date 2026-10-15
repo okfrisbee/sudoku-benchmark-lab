@@ -1,27 +1,6 @@
-from dataclasses import dataclass
-from typing import Literal
+"""Independently check solver answers before recording success."""
 
-from board_utils import board_size, parse_board
-
-
-SolverStatus = Literal["solved", "failed", "error", "timeout"]
-
-
-@dataclass
-class SolverResult:
-    solution: str | None
-    status: SolverStatus
-    runtime_seconds: float
-    setup_seconds: float | None = None
-    solve_seconds: float | None = None
-    backtracks: int | None = None
-    assignments: int | None = None
-    recursive_calls: int | None = None
-    error: str | None = None
-
-    @property
-    def solved(self) -> bool:
-        return self.status == "solved" and self.solution is not None
+from sudoku_benchmark_lab.board import board_size, parse_board
 
 
 def validate_solution(

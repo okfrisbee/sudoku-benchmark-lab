@@ -1,10 +1,50 @@
 import time
 
-from z3 import sat, unsat
+from z3 import And, Distinct, Int, Solver, sat, unsat
 
-from board_utils import format_board
-from generator import build_z3_sudoku_solver
-from solvers.metrics import SolverResult
+from sudoku_benchmark_lab.board import board_size, format_board, parse_board
+from sudoku_benchmark_lab.solvers.result import SolverResult
+
+
+def build_z3_sudoku_solver(board):
+    values = parse_board(board)
+    n, box = board_size(values)
+
+    if n <= 0:
+        raise ValueError("Board must contain at least one cell")
+
+    solver = Solver()
+    cells = [[Int(f"cell_{r}_{c}") for c in range(n)] for r in range(n)]
+
+    for r in range(n):
+        for c in range(n):
+            solver.add(And(cells[r][c] >= 1, cells[r][c] <= n))
+
+    for r in range(n):
+        solver.add(Distinct(cells[r]))
+
+    for c in range(n):
+        solver.add(Distinct([cells[r][c] for r in range(n)]))
+
+    for br in range(0, n, box):
+        for bc in range(0, n, box):
+            solver.add(
+                Distinct(
+                    [
+                        cells[r][c]
+                        for r in range(br, br + box)
+                        for c in range(bc, bc + box)
+                    ]
+                )
+            )
+
+    for index, value in enumerate(values):
+        if value != 0:
+            r, c = divmod(index, n)
+            solver.add(cells[r][c] == value)
+
+    return solver, cells, values, n, box
+
 
 
 def solve_smt(board: str | list[int]) -> SolverResult:

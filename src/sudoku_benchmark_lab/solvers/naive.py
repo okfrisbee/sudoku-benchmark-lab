@@ -1,7 +1,7 @@
 import time
 
-from board_utils import board_size, format_board, parse_board
-from solvers.metrics import SolverResult
+from sudoku_benchmark_lab.board import board_size, format_board, parse_board
+from sudoku_benchmark_lab.solvers.result import SolverResult
 
 
 def solve_naive(board: str | list[int]) -> SolverResult:

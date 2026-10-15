@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from config import load_config
+from sudoku_benchmark_lab.config import load_config
 
 CSV_FIELDS = [
     "size",
@@ -24,9 +24,6 @@ CSV_FIELDS = [
     "solution_found",
     "error",
 ]
-BENCHMARK_RESULTS_DIR = load_config()["paths"]["benchmark_results_dir"]
-
-
 def result_paths(dataset_path):
     root = Path(load_config()["paths"]["benchmark_results_dir"])
     dataset_stem = Path(dataset_path).stem
