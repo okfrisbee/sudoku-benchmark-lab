@@ -35,7 +35,7 @@ are not ratings of human puzzle difficulty.
 The table above is the short version. [BENCHMARK.md](BENCHMARK.md) keeps the
 calibration work, fixed test settings, timing rules, test machine, complete
 per-tier tables, and limitations. All saved data is under
-[data/research_benchmark](data/research_benchmark/README.md).
+[experiments](experiments/README.md), with suite datasets under `data/datasets/`.
 
 ## Quick start
 
@@ -207,8 +207,9 @@ print(path)
 ```
 
 New datasets go to `data/datasets/`. Interactive benchmark results go to
-`data/results/`. The research benchmark’s exact puzzles and results are already
-saved in `data/research_benchmark/`.
+`data/results/`. Suite-generated datasets are stored under
+`data/datasets/suites/<config-name>/`; suite results go under
+`experiments/results/<config-name>/<timestamp>/`.
 
 Puzzle generation starts from a completed board and removes clues. It does not
 test whether the remaining clues define a unique solution. Older datasets can
@@ -224,27 +225,24 @@ interactive menu and select **Benchmark**:
 .venv/bin/sudoku-lab
 ```
 
-To repeat the published benchmark, use a new or empty output directory:
+To run a configured benchmark suite, start the menu and select **Run Suite**.
+Every TOML file under `experiments/configs/` is listed. Each run gets its own
+timestamped results folder, while seeded datasets are kept in
+`data/datasets/suites/<config-name>/`.
 
 ```bash
-.venv/bin/python -m data.research_benchmark.suite \
-  --config data/research_benchmark/final_benchmark.toml \
-  --output-dir /tmp/sudoku-benchmark-reproduction
+.venv/bin/sudoku-lab
 ```
 
-The research suite recreates the seeded puzzles, gives each solver one warm-up
-run, checks every returned answer, and saves the detailed results. It refuses
-to overwrite a non-empty directory.
+The suite recreates the configured seeded puzzles, gives each solver one
+warm-up run when enabled, independently checks every returned answer, and saves
+the detailed results and provenance metadata.
 
 ## Tests and documentation checks
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m data.research_benchmark.verify_readme
 ```
-
-The second command rebuilds the two README result tables from the saved CSVs and
-checks that the full tables in `BENCHMARK.md` match their saved source.
 
 For package boundaries and development commands, see [ARCHITECTURE.md](ARCHITECTURE.md)
 and [AGENTS.md](AGENTS.md).

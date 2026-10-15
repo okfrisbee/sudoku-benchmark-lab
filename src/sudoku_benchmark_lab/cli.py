@@ -7,6 +7,7 @@ from sudoku_benchmark_lab.benchmark.reporting import (
     print_summary_table, result_paths, summary_dataframe, write_csv,
 )
 from sudoku_benchmark_lab.benchmark.runner import benchmark_dataset, solve_with_timeout
+from sudoku_benchmark_lab.benchmark.suite import list_suite_configs, run_suite
 from sudoku_benchmark_lab.benchmark.visualization import visualization_data, visualize_benchmark
 from sudoku_benchmark_lab.datasets.generation import difficulties, generate_dataset
 from sudoku_benchmark_lab.datasets.io import list_datasets
@@ -82,9 +83,33 @@ def benchmark_menu():
     return table
 
 
+def run_suite_menu():
+    configs = list_suite_configs()
+    if not configs:
+        print("\nNo suite configs found in experiments/configs/.")
+        return
+    selected = prompt_choice(
+        "\nAvailable benchmark suites:", [path.name for path in configs]
+    )
+    if selected is None:
+        print("Invalid suite config.")
+        return
+    config_path = next(path for path in configs if path.name == selected)
+    try:
+        output = run_suite(config_path)
+    except (OSError, ValueError, RuntimeError) as error:
+        print(f"Benchmark suite failed: {error}")
+        return
+    print(f"\nSuite results written to: {output}")
+
+
 def main():
     while True:
-        print("\n-----Sudoku Menu-----\n1. Enter Puzzle\n2. Generate Dataset\n3. Benchmark\n4. Quit")
+        print(
+            "\n-----Sudoku Menu-----\n"
+            "1. Enter Puzzle\n2. Generate Dataset\n3. Benchmark\n"
+            "4. Run Suite\n5. Quit"
+        )
         choice = input().strip()
         if choice == "1":
             puzzle = input("\nEnter puzzle as one line: ").strip()
@@ -106,6 +131,8 @@ def main():
                 show_naive = "naive" not in times or input("Show naive solver on graph? (y/n): ").strip().lower() == "y"
                 visualize_benchmark(times, count, averages, show_naive=show_naive)
         elif choice == "4":
+            run_suite_menu()
+        elif choice == "5":
             return
         else:
             print("Invalid choice.")

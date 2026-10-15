@@ -12,7 +12,6 @@ import multiprocessing
 import os
 from pathlib import Path
 import platform
-import shutil
 import subprocess
 import time
 import tomllib
@@ -20,7 +19,6 @@ from typing import Any
 
 import pandas as pd
 
-from sudoku_benchmark_lab.config import load_config
 from sudoku_benchmark_lab.config import load_config
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
 from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver, solver_label
@@ -33,7 +31,10 @@ from sudoku_benchmark_lab.benchmark.runner import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_CONFIG_PATH = PROJECT_ROOT / "data/research_benchmark/final_benchmark.toml"
+CONFIGS_DIR = PROJECT_ROOT / "experiments/configs"
+SUITE_DATASETS_DIR = PROJECT_ROOT / "data/datasets/suites"
+RESULTS_DIR = PROJECT_ROOT / "experiments/results"
+DEFAULT_CONFIG_PATH = CONFIGS_DIR / "run_01.toml"
 SOURCE_FILES = [
     Path("src/sudoku_benchmark_lab") / path for path in (
         "benchmark/reporting.py", "benchmark/runner.py", "benchmark/suite.py",
@@ -58,7 +59,6 @@ def load_suite_config(path: str | Path) -> dict[str, Any]:
         raise ValueError("Benchmark config must define at least one [[cases]] table.")
 
     name = _non_empty_string(suite, "name")
-    output_dir = _non_empty_string(suite, "output_dir")
     solvers = suite.get("solvers")
     if (
         not isinstance(solvers, list)
@@ -79,6 +79,12 @@ def load_suite_config(path: str | Path) -> dict[str, Any]:
         if not isinstance(case, dict):
             raise ValueError("Each benchmark case must be a table.")
         case_name = _non_empty_string(case, "name")
+        if (
+            Path(case_name).name != case_name
+            or "\\" in case_name
+            or case_name in {".", ".."}
+        ):
+            raise ValueError(f"Case name {case_name!r} must be a filename-safe name.")
         if case_name in seen_names:
             raise ValueError(f"Duplicate benchmark case name: {case_name}")
         seen_names.add(case_name)
@@ -108,7 +114,6 @@ def load_suite_config(path: str | Path) -> dict[str, Any]:
 
     return {
         "name": name,
-        "output_dir": output_dir,
         "warmup": bool(suite.get("warmup", True)),
         "solvers": solvers,
         "cases": validated_cases,
@@ -118,19 +123,35 @@ def load_suite_config(path: str | Path) -> dict[str, Any]:
 def run_suite(
     config_path: str | Path = DEFAULT_CONFIG_PATH,
     output_dir: str | Path | None = None,
+    datasets_root: str | Path | None = None,
 ) -> Path:
     config_path = Path(config_path)
     suite = load_suite_config(config_path)
-    destination = Path(output_dir or suite["output_dir"])
-    if destination.exists() and any(destination.iterdir()):
-        raise FileExistsError(
-            f"Refusing to overwrite non-empty benchmark directory: {destination}"
-        )
+    run_name = config_path.stem
+    datasets_dir = Path(datasets_root) if datasets_root else SUITE_DATASETS_DIR / run_name
+    datasets_dir.mkdir(parents=True, exist_ok=True)
 
+    prepared_cases = []
+    for case in suite["cases"]:
+        print(
+            f"\nGenerating {case['count']} deterministic {case['name']} puzzles "
+            f"(seed={case['seed']})..."
+        )
+        records = generate_dataset_records(
+            case["size"],
+            case["difficulty"],
+            case["count"],
+            seed=case["seed"],
+        )
+        dataset_path = datasets_dir / f"{case['name']}.jsonl"
+        _write_dataset_without_replacing(dataset_path, records)
+        prepared_cases.append((case, records, dataset_path))
+
+    destination = Path(output_dir) if output_dir else _new_results_directory(run_name)
+    if destination.exists() and any(destination.iterdir()):
+        raise FileExistsError(f"Refusing to overwrite non-empty benchmark directory: {destination}")
     destination.mkdir(parents=True, exist_ok=True)
-    datasets_dir = destination / "datasets"
-    datasets_dir.mkdir()
-    shutil.copy2(config_path, destination / "suite_config.toml")
+
     project_config_path = destination / "project_config.json"
     project_config_text = json.dumps(load_config(), indent=2, sort_keys=True) + "\n"
     project_config_path.write_text(project_config_text, encoding="utf-8")
@@ -145,19 +166,7 @@ def run_suite(
     print(f"Output: {destination}")
 
     warmup_complete = False
-    for case in suite["cases"]:
-        print(
-            f"\nGenerating {case['count']} deterministic {case['name']} puzzles "
-            f"(seed={case['seed']})..."
-        )
-        records = generate_dataset_records(
-            case["size"],
-            case["difficulty"],
-            case["count"],
-            seed=case["seed"],
-        )
-        dataset_path = datasets_dir / f"{case['name']}.jsonl"
-        _write_jsonl(records, dataset_path)
+    for case, records, dataset_path in prepared_cases:
         dataset_files.append(dataset_path)
 
         if suite["warmup"] and not warmup_complete:
@@ -184,7 +193,7 @@ def run_suite(
         )
 
         table.insert(0, "case", case["name"])
-        table.insert(1, "dataset", str(dataset_path.relative_to(destination)))
+        table.insert(1, "dataset", _repository_or_absolute_path(dataset_path))
         raw_tables.append(table)
 
         summary = summary_dataframe(table, tested=case["count"])
@@ -381,6 +390,9 @@ def _environment_metadata(
         "cases": suite["cases"],
         "clue_percent_ranges": load_config()["generation"]["clue_percent_ranges"],
         "source_revision": _git_revision(),
+        "suite_config": str(config_path.resolve().relative_to(PROJECT_ROOT))
+        if config_path.resolve().is_relative_to(PROJECT_ROOT)
+        else str(config_path.resolve()),
         "suite_config_sha256": _sha256(config_path),
         "project_config_sha256": hashlib.sha256(
             json.dumps(load_config(), sort_keys=True).encode("utf-8")
@@ -391,15 +403,68 @@ def _environment_metadata(
         },
         "artifact_sha256": {
             str(path.relative_to(destination)): _sha256(path)
-            for path in [*dataset_files, *result_files]
+            for path in result_files
         },
+        "dataset_files": [
+            {
+                "path": str(path.resolve().relative_to(PROJECT_ROOT))
+                if path.resolve().is_relative_to(PROJECT_ROOT)
+                else str(path.resolve()),
+                "sha256": _sha256(path),
+            }
+            for path in dataset_files
+        ],
     }
 
 
-def _write_jsonl(records: list[dict[str, Any]], path: Path) -> None:
-    with path.open("w", encoding="utf-8") as output:
+def _write_dataset_without_replacing(
+    path: Path,
+    records: list[dict[str, Any]],
+) -> None:
+    """Write a deterministic suite dataset, preserving any existing version."""
+    import tempfile
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="w", encoding="utf-8", dir=path.parent, delete=False
+    ) as temporary:
+        temporary_path = Path(temporary.name)
         for record in records:
-            output.write(json.dumps(record, sort_keys=True) + "\n")
+            temporary.write(json.dumps(record, sort_keys=True) + "\n")
+    try:
+        if path.exists():
+            if _sha256(path) != _sha256(temporary_path):
+                raise FileExistsError(
+                    f"Dataset already exists with different contents: {path}. "
+                    "Use a new suite config filename to preserve both versions."
+                )
+            return
+        temporary_path.replace(path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def _new_results_directory(run_name: str) -> Path:
+    """Create a unique timestamped result directory for this suite config."""
+    run_root = RESULTS_DIR / run_name
+    run_root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S_%f")
+    destination = run_root / stamp
+    destination.mkdir()
+    return destination
+
+
+def _repository_or_absolute_path(path: Path) -> str:
+    resolved = path.resolve()
+    if resolved.is_relative_to(PROJECT_ROOT):
+        return str(resolved.relative_to(PROJECT_ROOT))
+    return str(resolved)
+
+
+def list_suite_configs(directory: str | Path = CONFIGS_DIR) -> list[Path]:
+    """Return TOML suite configs in stable display order."""
+    config_dir = Path(directory)
+    return sorted(path for path in config_dir.glob("*.toml") if path.is_file())
 
 
 def _requirement_names(path: Path) -> list[str]:
@@ -507,7 +572,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="write to this new/empty directory instead of suite.output_dir",
+        help="write results to this specific directory instead of the timestamped default",
     )
     args = parser.parse_args()
     run_suite(args.config, args.output_dir)

@@ -1,7 +1,7 @@
 # Calibration notes
 
 These files preserve the pilot measurements used to choose the final benchmark
-matrix in [`final_benchmark.toml`](../final_benchmark.toml).
+matrix in [`run_01.toml`](../../configs/run_01.toml).
 They are calibration evidence, not the published benchmark result.
 
 ## Studies

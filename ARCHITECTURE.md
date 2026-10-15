@@ -12,21 +12,21 @@ This is a Sudoku-specific Python package for generating puzzle datasets, compari
 | `datasets/io.py` | Read and write JSONL and locate generated datasets. Accept legacy fields in old research records. |
 | `benchmark/runner.py` | Execute one solver per child process with a timeout; validate claimed solutions; return per-attempt tabular results. |
 | `benchmark/reporting.py`, `visualization.py` | Aggregate and save results; draw plots. Runtime summaries use successful solves, while throughput charges timeouts. |
-| `benchmark/suite.py` | Run a configured case matrix with seeded datasets, warm-up, result files, and environment metadata. |
+| `benchmark/suite.py` | Discover TOML suites, generate seeded case datasets, run the configured matrix, and write result and provenance files. |
 | `cli.py` | Interactive input, menus, progress output, and graph choices. |
 
-The dependency direction is board and result contracts → solvers and datasets → benchmark → CLI. The runner and dataset modules never prompt. The research suite calls the same runner as the interactive benchmark. The root `main.py` and `data/research_benchmark/suite.py` retain their command paths as small entry-point wrappers.
+The dependency direction is board and result contracts → solvers and datasets → benchmark → CLI. The runner and dataset modules never prompt. A suite calls the same runner as the interactive benchmark. The root `main.py` remains a small compatibility entry point.
 
 ## Solver and data contracts
 
 A registered solver accepts a board string or list of integer cells and returns `SolverResult`. `0` means empty. Space-separated strings support values above nine. A `solved` result contains a completed board; the runner checks it against original clues and every row, column, and box before recording success. SAT/SMT dependencies stay local to their implementations. To add a solver, register its module, callable, and label in `solvers/registry.py`; no plugin discovery is used.
 
-Generation starts from a seeded complete board and removes a seeded clue pattern. It does not test uniqueness. New JSONL records omit historical `verification_mode` and `unique` fields; the reader accepts old records containing them. An experiment specifies solver names, puzzle counts, seeds, sizes, and timeouts in a TOML suite file.
+Generation starts from a seeded complete board and removes a seeded clue pattern. It does not test uniqueness. New JSONL records omit historical `verification_mode` and `unique` fields; the reader accepts old records containing them. An experiment specifies solver names, puzzle counts, seeds, sizes, and timeouts in a TOML suite file under `experiments/configs/`. The CLI lists every TOML file there and invokes the suite runner. Case datasets are kept under `data/datasets/suites/<config-name>/`; run outputs are written to a new timestamped directory under `experiments/results/<config-name>/`.
 
 The runner charges a timed-out attempt exactly its time limit. Successful runtime is measured inside the solver and excludes process startup, result transport, and independent answer validation. Published measurements should only be compared with these definitions in mind.
 
 ## Configuration and historical evidence
 
-Application settings live in `config.py` as validated Python defaults; callers can pass nested overrides to `load_config()`. Paths default to the checkout's `data/` folders, or to `data/` under the current directory when installed outside a checkout. Research case matrices remain in TOML because they describe individual experiments. Each suite output snapshots the application settings to `project_config.json` and captures source and artifact hashes. Use a new output directory for each study.
+Application settings live in `config.py` as validated Python defaults; callers can pass nested overrides to `load_config()`. Paths default to the checkout's `data/` folders, or to `data/` under the current directory when installed outside a checkout. Suite matrices remain in TOML because they describe individual experiments. Each result folder snapshots application settings to `project_config.json`; metadata records the suite config path and hash, dataset paths and hashes, source revision, environment, and result artifact hashes. Every execution receives a unique timestamped result folder.
 
-The original research datasets, CSVs, and metadata under `data/research_benchmark/final/` are frozen evidence. The paths and hashes in their `metadata.json` refer to the original source revision. Moving code does not rewrite that history. `data/research_benchmark/verify_readme.py` checks the published README and BENCHMARK tables against those saved results.
+The published study is frozen evidence under `experiments/results/run_01/2026-09-04_00-44-48/`; its case datasets are under `data/datasets/suites/run_01/`. Historical metadata retains the source paths and hashes recorded at the time of the run. Calibration measurements are under `experiments/results/calibration/`.

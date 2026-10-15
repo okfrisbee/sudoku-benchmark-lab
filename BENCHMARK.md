@@ -55,7 +55,7 @@ Those pilots showed:
 The final puzzle counts, seeds, and time limits are in the first table below.
 They were locked before the final benchmark began and were not changed to make
 the final results look better. The pilot CSVs and fuller decision notes are in
-[data/research_benchmark/calibration](data/research_benchmark/calibration/README.md).
+[calibration notes](experiments/results/calibration/README.md).
 
 ## How runs and timings work
 
@@ -93,7 +93,7 @@ the final results look better. The pilot CSVs and fuller decision notes are in
 | Complete run time | 463.488 seconds |
 
 The saved
-[metadata file](data/research_benchmark/final/metadata.json) includes the full
+[metadata file](experiments/results/run_01/2026-09-04_00-44-48/metadata.json) includes the full
 package list, timestamps, definitions, and file hashes.
 
 ## Detailed results
@@ -188,44 +188,38 @@ For a shorter explanation of what these measurements mean, see
   It does not mean the puzzle has no answer or that the solver could never
   finish with more time.
 
-## Run the same benchmark
+## Run a benchmark suite
 
 Install the project as shown in the [quick start](README.md#quick-start), then
-write the rerun to a new or empty folder:
+choose **Run Suite** from the interactive menu. The menu lists TOML files in
+[`experiments/configs/`](experiments/configs/). Every execution creates a new
+timestamped results folder under `experiments/results/<config-name>/` and
+stores the seeded case datasets under `data/datasets/suites/<config-name>/`.
 
 ```bash
-.venv/bin/python -m data.research_benchmark.suite \
-  --config data/research_benchmark/final_benchmark.toml \
-  --output-dir /tmp/sudoku-benchmark-reproduction
+.venv/bin/sudoku-lab
 ```
 
 The puzzle seeds, solver order, case order, and time limits stay fixed. Runtime
-values will naturally change on a different computer. The suite refuses to
-overwrite a folder that already contains files.
-
-Check that the documentation still matches the saved result files:
-
-```bash
-.venv/bin/python -m data.research_benchmark.verify_readme
-```
+values will naturally change on a different computer. Run metadata records the
+configuration and dataset hashes for reproducibility.
 
 ## Saved evidence
 
-- [`raw_results.csv`](data/research_benchmark/final/raw_results.csv) has one row
+- [`raw_results.csv`](experiments/results/run_01/2026-09-04_00-44-48/raw_results.csv) has one row
   for every solver attempt.
-- [`summary_by_case.csv`](data/research_benchmark/final/summary_by_case.csv)
+- [`summary_by_case.csv`](experiments/results/run_01/2026-09-04_00-44-48/summary_by_case.csv)
   groups results by board size, clue level, and solver.
-- [`summary_by_size.csv`](data/research_benchmark/final/summary_by_size.csv)
+- [`summary_by_size.csv`](experiments/results/run_01/2026-09-04_00-44-48/summary_by_size.csv)
   groups results by board size and solver.
-- [`readme_tables.md`](data/research_benchmark/final/readme_tables.md) is the
+- [`readme_tables.md`](experiments/results/run_01/2026-09-04_00-44-48/readme_tables.md) is the
   saved source for the detailed tables above.
-- [`suite_config.toml`](data/research_benchmark/final/suite_config.toml) is the
-  exact configuration copied when the run began.
-- [`datasets/`](data/research_benchmark/final/datasets/) contains the exact
-  puzzles used.
-- [`metadata.json`](data/research_benchmark/final/metadata.json) records the
+- [`run_01.toml`](experiments/configs/run_01.toml) is the exact suite configuration.
+- [`run_01 datasets`](data/datasets/suites/run_01/) contains the exact puzzles used.
+- [`metadata.json`](experiments/results/run_01/2026-09-04_00-44-48/metadata.json) records the
   machine, method, and SHA-256 file hashes.
 
-The active runner, verifier, pilot data, and final evidence are indexed in
-[data/research_benchmark](data/research_benchmark/README.md).
+The reusable runner is in `src/sudoku_benchmark_lab/benchmark/`; suite configs
+and run outputs are indexed in [experiments](experiments/README.md). Calibration
+pilot measurements are under `experiments/results/calibration/`.
 
