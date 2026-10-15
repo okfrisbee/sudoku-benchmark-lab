@@ -49,6 +49,9 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
             write_suite_config(config, solvers='["naive"]')
             run_suite(config, destination, datasets)
             self.assertEqual(len((destination / "raw_results.csv").read_text().splitlines()), 3)
+            self.assertTrue((destination / "summary_by_case.csv").exists())
+            self.assertTrue((destination / "summary_by_size.csv").exists())
+            self.assertFalse((destination / "readme_tables.md").exists())
             self.assertTrue((destination / "metadata.json").exists())
             self.assertTrue((datasets / "4x4_easy.jsonl").exists())
             metadata = json.loads(
@@ -58,6 +61,7 @@ class BenchmarkSuiteConfigTests(unittest.TestCase):
                 metadata["suite_config_sha256"],
                 hashlib.sha256(config.read_bytes()).hexdigest(),
             )
+            self.assertNotIn("readme_tables.md", metadata["artifact_sha256"])
             self.assertEqual(metadata["dataset_files"][0]["path"], str((datasets / "4x4_easy.jsonl").resolve()))
             with self.assertRaises(FileExistsError):
                 run_suite(config, destination, datasets)

@@ -12,7 +12,7 @@ This is a Sudoku-specific Python package for generating puzzle datasets, compari
 | `datasets/io.py` | Read and write JSONL and locate generated datasets. Accept legacy fields in old research records. |
 | `benchmark/runner.py` | Execute one solver per child process with a timeout; validate claimed solutions; return per-attempt tabular results. |
 | `benchmark/reporting.py`, `visualization.py` | Save per-attempt rows (including each solver's returned board), aggregate metrics, and draw plots. Runtime summaries use successful solves, while throughput charges timeouts. |
-| `benchmark/suite.py` | Discover TOML suites, generate seeded case datasets, run the configured matrix, and write result and provenance files. |
+| `benchmark/suite.py` | Discover TOML suites, generate seeded case datasets, run the configured matrix, and write CSV results and provenance metadata. |
 | `cli.py` | Interactive input, menus, progress output, and graph choices. |
 
 The dependency direction is board and result contracts → solvers and datasets → benchmark → CLI. The runner and dataset modules never prompt. A suite calls the same runner as the interactive benchmark. The root `main.py` remains a small compatibility entry point.

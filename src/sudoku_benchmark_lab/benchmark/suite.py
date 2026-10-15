@@ -21,7 +21,7 @@ import pandas as pd
 
 from sudoku_benchmark_lab.config import load_config
 from sudoku_benchmark_lab.datasets.generation import generate_dataset_records
-from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver, solver_label
+from sudoku_benchmark_lab.solvers.registry import SOLVERS, get_solver
 from sudoku_benchmark_lab.benchmark.reporting import summary_dataframe
 from sudoku_benchmark_lab.benchmark.runner import (
     benchmark_dataset,
@@ -211,14 +211,9 @@ def run_suite(
     raw_path = destination / "raw_results.csv"
     case_summary_path = destination / "summary_by_case.csv"
     size_summary_path = destination / "summary_by_size.csv"
-    readme_tables_path = destination / "readme_tables.md"
     raw.to_csv(raw_path, index=False)
     by_case.to_csv(case_summary_path, index=False)
     by_size.to_csv(size_summary_path, index=False)
-    readme_tables_path.write_text(
-        render_readme_tables(suite, by_case, by_size),
-        encoding="utf-8",
-    )
 
     finished_at = datetime.now().astimezone()
     metadata = _environment_metadata(
@@ -226,7 +221,7 @@ def run_suite(
         config_path=config_path,
         destination=destination,
         dataset_files=dataset_files,
-        result_files=[raw_path, case_summary_path, size_summary_path, readme_tables_path, project_config_path],
+        result_files=[raw_path, case_summary_path, size_summary_path, project_config_path],
         started_at=started_at,
         finished_at=finished_at,
         wall_seconds=time.perf_counter() - wall_start,
@@ -247,75 +242,6 @@ def run_suite(
             f"Benchmark completed with {len(errors)} error result(s); inspect {raw_path}."
         )
     return destination
-
-
-def render_readme_tables(
-    suite: dict[str, Any],
-    by_case: pd.DataFrame,
-    by_size: pd.DataFrame,
-) -> str:
-    clue_ranges = load_config()["generation"]["clue_percent_ranges"]
-    lines = [
-        "### Frozen benchmark configuration",
-        "",
-        "| Size | Clue-density tier | Clue range | Puzzles | Timeout / solver | Seed |",
-        "|---:|:---|---:|---:|---:|---:|",
-    ]
-    for case in suite["cases"]:
-        low, high = clue_ranges[case["difficulty"]]
-        lines.append(
-            f"| {case['size']}×{case['size']} | {case['difficulty']} | "
-            f"{low * 100:.0f}–{high * 100:.0f}% | {case['count']} | "
-            f"{case['timeout_seconds']:g} s | {case['seed']} |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "### Results aggregated by size",
-            "",
-            "Runtime statistics use successful solves only. Throughput is solved puzzles divided by total solver time, with each timeout charged at its cutoff.",
-            "",
-            "| Size | Solver | Attempted | Solved | Success | Timeouts | Median (ms) | Mean (ms) | p95 (ms) | Throughput (puzzles/s) |",
-            "|---:|:---|---:|---:|---:|---:|---:|---:|---:|---:|",
-        ]
-    )
-    for row in by_size.itertuples(index=False):
-        lines.append(
-            f"| {row.size}×{row.size} | {solver_label(row.solver)} | "
-            f"{row.tested} | {row.solved} | {row.success_rate:.1f}% | "
-            f"{row.timeouts} | {_milliseconds(row.median_runtime_s)} | "
-            f"{_milliseconds(row.avg_runtime_s)} | "
-            f"{_milliseconds(row.p95_runtime_s)} | "
-            f"{row.throughput_puzzles_s:.2f} |"
-        )
-
-    lines.extend(
-        [
-            "",
-            "### Results by clue-density tier",
-            "",
-            "Each cell is `solved/attempted · median successful runtime · timeouts`.",
-            "",
-            "| Size / tier | "
-            + " | ".join(solver_label(name) for name in suite["solvers"])
-            + " |",
-            "|:---|" + "---:|" * len(suite["solvers"]),
-        ]
-    )
-    for case in suite["cases"]:
-        case_rows = by_case[by_case["case"].eq(case["name"])].set_index("solver")
-        cells = [
-            _compact_result(case_rows.loc[solver_name])
-            for solver_name in suite["solvers"]
-        ]
-        lines.append(
-            f"| {case['size']}×{case['size']} {case['difficulty']} | "
-            + " | ".join(cells)
-            + " |"
-        )
-
-    return "\n".join(lines) + "\n"
 
 
 def _summary_by_size(raw: pd.DataFrame, suite: dict[str, Any]) -> pd.DataFrame:
@@ -512,21 +438,6 @@ def _sha256(path: Path) -> str:
         for chunk in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
-
-
-def _milliseconds(value: float) -> str:
-    if pd.isna(value):
-        return "—"
-    return f"{value * 1000:.3f}"
-
-
-def _compact_result(row: pd.Series) -> str:
-    runtime = _milliseconds(row["median_runtime_s"])
-    runtime_label = "—" if runtime == "—" else f"{runtime} ms"
-    return (
-        f"{int(row['solved'])}/{int(row['tested'])} · {runtime_label} · "
-        f"{int(row['timeouts'])} TO"
-    )
 
 
 def _non_empty_string(table: dict[str, Any], key: str) -> str:

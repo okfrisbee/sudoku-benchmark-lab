@@ -213,7 +213,8 @@ configuration and dataset hashes for reproducibility.
 - [`summary_by_size.csv`](experiments/results/run_01/2026-09-04_00-44-48/summary_by_size.csv)
   groups results by board size and solver.
 - [`readme_tables.md`](experiments/results/run_01/2026-09-04_00-44-48/readme_tables.md) is the
-  saved source for the detailed tables above.
+  frozen source for the detailed tables above. New suite runs do not generate
+  README-specific Markdown files.
 - [`run_01.toml`](experiments/configs/run_01.toml) is the exact suite configuration.
 - [`run_01 datasets`](data/datasets/suites/run_01/) contains the exact puzzles used.
 - [`metadata.json`](experiments/results/run_01/2026-09-04_00-44-48/metadata.json) records the
